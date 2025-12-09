@@ -1,0 +1,50 @@
+# FastAPI and ASGI server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database
+motor==3.3.2
+pymongo==4.6.1
+redis==5.0.1
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-dotenv==1.0.0
+
+# AI/ML
+anthropic==0.39.0  # Updated for tool calling support
+openai==1.12.0
+pinecone-client==3.0.0
+tiktoken==0.6.0
+
+# Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# Docker/Sandbox
+docker==6.1.3  # Stable version with Unix socket support
+urllib3<2.0  # Required for Docker Unix socket support
+
+# Background tasks
+celery==5.3.6
+flower==2.0.1
+
+# Monitoring
+opentelemetry-api==1.22.0
+opentelemetry-sdk==1.22.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.23.3
+httpx==0.26.0
+
+# Security
+cryptography==42.0.0
+
+# Utils
+python-dateutil==2.8.2
+tenacity==8.2.3  # Retry logic with exponential backoff
