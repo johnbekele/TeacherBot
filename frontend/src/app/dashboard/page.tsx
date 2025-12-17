@@ -178,7 +178,11 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="cursor-pointer group animate-slide-up hover:border-primary transition-all duration-300 hover:shadow-lg" style={{ animationDelay: '500ms' }}>
+          <Card
+            className="cursor-pointer group animate-slide-up hover:border-primary transition-all duration-300 hover:shadow-lg"
+            style={{ animationDelay: '500ms' }}
+            onClick={() => router.push('/learning-paths')}
+          >
             <CardHeader>
               <CardTitle className="group-hover:text-primary transition-colors">
                 Browse Learning Paths

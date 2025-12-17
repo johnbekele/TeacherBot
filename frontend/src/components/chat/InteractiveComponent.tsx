@@ -35,9 +35,9 @@ export default function InteractiveComponent({ component }: InteractiveComponent
         </div>
 
         {/* Output */}
-        <div className="px-4 py-3 bg-white">
-          <div className="text-xs font-semibold text-gray-500 mb-1">Output:</div>
-          <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
+        <div className="px-4 py-3 bg-white dark:bg-gray-900">
+          <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Output:</div>
+          <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
             {component.output || '(no output)'}
           </pre>
         </div>
@@ -60,7 +60,7 @@ export default function InteractiveComponent({ component }: InteractiveComponent
           {options?.map((option: string, idx: number) => (
             <button
               key={idx}
-              className="w-full text-left px-4 py-2 rounded bg-white border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors"
+              className="w-full text-left px-4 py-2 rounded bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950 hover:border-blue-300 dark:hover:border-blue-700 transition-colors text-gray-900 dark:text-gray-100"
             >
               {option}
             </button>

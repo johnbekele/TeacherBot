@@ -76,7 +76,7 @@ export default function AppLayout({
             // Full width content for other pages
             <div className="flex w-full">
               <div className="flex w-full flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-950 p-4 lg:p-6">
+                <div className="flex-1 overflow-y-auto bg-background p-4 lg:p-6">
                   {children}
                 </div>
               </div>

@@ -87,7 +87,7 @@ export default function ProgressPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-800">Your Progress</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Your Progress</h1>
 
         {/* Overview Cards */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
@@ -135,8 +135,8 @@ export default function ProgressPage() {
         </div>
 
         {/* Weekly Activity Chart */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-800">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
             Weekly Activity
           </h2>
           <div className="mt-6 flex items-end justify-between space-x-2">
@@ -154,8 +154,8 @@ export default function ProgressPage() {
                       title={`${day.exercises} exercises`}
                     />
                   </div>
-                  <p className="mt-2 text-xs text-gray-600">{day.day}</p>
-                  <p className="text-xs font-medium text-gray-800">
+                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">{day.day}</p>
+                  <p className="text-xs font-medium text-gray-800 dark:text-gray-200">
                     {day.exercises}
                   </p>
                 </div>
@@ -165,8 +165,8 @@ export default function ProgressPage() {
         </div>
 
         {/* Progress by Difficulty */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="text-xl font-semibold text-gray-800">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
             Progress by Difficulty
           </h2>
           <div className="mt-6 space-y-4">
@@ -177,14 +177,14 @@ export default function ProgressPage() {
                 return (
                   <div key={difficulty}>
                     <div className="flex items-center justify-between">
-                      <span className="capitalize text-gray-700">
+                      <span className="capitalize text-gray-700 dark:text-gray-300">
                         {difficulty}
                       </span>
-                      <span className="text-sm text-gray-600">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
                         {data.completed} / {data.total}
                       </span>
                     </div>
-                    <div className="mt-2 h-3 overflow-hidden rounded-full bg-gray-200">
+                    <div className="mt-2 h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                       <div
                         className={`h-full rounded-full transition-all ${
                           difficulty === 'beginner'
@@ -205,25 +205,25 @@ export default function ProgressPage() {
 
         {/* Recent Nodes */}
         {stats.recent_nodes.length > 0 && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-semibold text-gray-800">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
               Recently Completed Nodes
             </h2>
             <div className="mt-4 space-y-3">
               {stats.recent_nodes.map((node) => (
                 <div
                   key={node.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 p-3"
+                  className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 p-3"
                 >
                   <div>
-                    <h3 className="font-medium text-gray-800">{node.title}</h3>
+                    <h3 className="font-medium text-gray-800 dark:text-gray-100">{node.title}</h3>
                     <span
                       className={`mt-1 inline-block rounded-full px-2 py-1 text-xs ${
                         node.difficulty === 'beginner'
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                           : node.difficulty === 'intermediate'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
+                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+                          : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
                       }`}
                     >
                       {node.difficulty}

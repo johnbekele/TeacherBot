@@ -70,11 +70,11 @@ export function AppSidebar() {
       title: 'Learning',
       url: '#',
       icon: BookOpen,
-      isActive: pathname?.startsWith('/learn') || pathname?.startsWith('/nodes'),
+      isActive: pathname?.startsWith('/learn') || pathname?.startsWith('/nodes') || pathname?.startsWith('/learning-paths'),
       items: [
         {
-          title: 'Browse Paths',
-          url: '/nodes',
+          title: 'Learning Paths',
+          url: '/learning-paths',
         },
         {
           title: 'My Progress',
