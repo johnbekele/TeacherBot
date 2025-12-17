@@ -29,44 +29,28 @@ export default function ExerciseView({ exerciseId, sessionId }: ExerciseViewProp
     loadExercise(exerciseId);
   }, [exerciseId, loadExercise]);
 
-  const handleSubmit = () => {
-    if (currentExercise) {
-      submitCode(exerciseId, editorCode, currentExercise.type);
+  const handleSubmit = async () => {
+    if (!currentExercise) return;
+
+    try {
+      // First submit to get grading results
+      await submitCode(exerciseId, editorCode, currentExercise.type);
+
+      // Then send to chat for AI feedback and interaction
+      const { sendMessage } = useChatStore.getState();
+      await sendMessage(
+        `I've submitted my code for this exercise. Here's my solution:\n\n\`\`\`${currentExercise.type}\n${editorCode}\n\`\`\`\n\nCan you review it and let me know how I did?`,
+        'exercise',
+        exerciseId,
+        editorCode
+      );
+      console.log('💻 Code submission sent to AI via chat');
+    } catch (err) {
+      console.error('Failed to submit code:', err);
     }
   };
 
-  // Notify AI after exercise completion
-  useEffect(() => {
-    const notifyAI = async () => {
-      if (results && submissionStatus === 'completed' && sessionId && !aiProcessing) {
-        console.log('Notifying AI about exercise completion:', {
-          exerciseId,
-          results,
-          sessionId
-        });
-
-        setAiProcessing(true);
-        try {
-          const { api } = await import('@/lib/api');
-          const response = await api.notifyExerciseSubmission(
-            exerciseId,
-            results.submission_id,
-            editorCode
-          );
-
-          console.log('AI feedback received:', response);
-          // AI feedback will appear in the chat panel
-        } catch (error) {
-          console.error('Failed to get AI feedback:', error);
-        } finally {
-          setAiProcessing(false);
-        }
-      }
-    };
-
-    notifyAI();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [results?.submission_id, submissionStatus, sessionId]);
+  // AI feedback now happens through chat during handleSubmit
 
   const handleHint = async () => {
     try {

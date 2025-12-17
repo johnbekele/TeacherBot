@@ -133,16 +133,18 @@ class LearningOrchestrator:
         system_prompt = await self._build_post_submission_prompt(user_id)
 
         # Message to AI
-        status = "PASSED" if test_results["passed"] else "FAILED"
+        status = "PASSED ✅" if test_results["passed"] else "NEEDS WORK 📝"
         message = f"""User submitted code for exercise: {exercise['title']}
 
 Results: {test_results['score']}% - {status}
 
 Test Results: {test_results.get('test_results', [])}
 
-Analyze their submission:
-1. Use `provide_feedback` to give specific, actionable feedback
-2. Use `navigate_to_next_step` to automatically move them forward if they passed, or suggest retry if they didn't"""
+IMPORTANT: Analyze their submission and provide feedback in chat:
+1. Give detailed feedback on their code (what worked well, what needs improvement)
+2. If PASSED: Congratulate them! 🎉 Then ASK what they want to do next (continue to next lecture OR another exercise)
+3. If FAILED: Encourage them and suggest improvements. Ask if they want to retry or need help.
+4. WAIT for their response before taking any action - do NOT auto-navigate or auto-generate"""
 
         print(f"📝 Exercise submission: {exercise['title']} - Score: {test_results['score']}%")
 
@@ -261,18 +263,22 @@ CURRENT TASK: Analyze exercise submission and provide feedback
 
 Use your tools:
 1. `provide_feedback` - Give specific, constructive feedback
-2. `navigate_to_next_step` - Automatically guide them to next activity
-3. `generate_content` - Create next lecture content when they're ready to move forward
+2. `navigate_to_next_step` - Guide them to next activity (only when user explicitly requests)
+3. `generate_exercise` - Create another exercise (only when user requests more practice)
+4. `generate_content` - Create next lecture content (only when user wants to continue)
 
-CRITICAL DECISION LOGIC:
-- If they PASSED (score >= 70%):
-  1. Celebrate their success with specific feedback
-  2. Use `navigate_to_next_step` to move them to the NEXT LECTURE CONTENT
-  3. DO NOT create another exercise - they've mastered this topic
+INTERACTIVE FLOW:
+1. **Give Feedback First** - Always start with detailed feedback about their submission
+2. **Ask User What They Want** - After feedback, ask them to choose:
+   - "Would you like to continue to the next lecture, or would you prefer another exercise to practice more?"
+3. **Wait for User Response** - DO NOT navigate or create anything until user responds
+4. **Act Based on User Choice**:
+   - If user says "next lecture" or "continue" → Use `navigate_to_next_step` to next lecture content
+   - If user says "another exercise" or "more practice" → Use `generate_exercise` to create new exercise
+   - If user wants to retry same exercise → Encourage them to try again
 
-- If they FAILED (score < 70%):
-  1. Provide encouragement and specific improvement tips
-  2. Suggest they review the feedback and try again
-  3. DO NOT auto-navigate - let them retry when ready
-
-IMPORTANT: After passing an exercise, always progress to next lecture content, not another exercise!"""
+CRITICAL RULES:
+- If they PASSED (score >= 70%): Give applause and congratulations! 🎉 Then ask what they want to do next
+- If they FAILED (score < 70%): Give encouragement and specific tips, then ask if they want to retry or need help
+- ALWAYS wait for user's explicit choice before navigating or generating new content
+- Be conversational and supportive in chat"""
