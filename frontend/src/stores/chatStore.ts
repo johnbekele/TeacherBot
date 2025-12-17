@@ -56,23 +56,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendMessage: async (message, contextType = 'general', contextId, userCode) => {
     set({ isLoading: true, error: null });
 
+    // Check if this is a background request (should not show in chat)
+    const isBackground = message.startsWith('[BACKGROUND]');
+
     // Debug logging
     console.log("chatStore.sendMessage called with:", {
       message: message.substring(0, 50),
       contextType,
       contextId,
-      userCode
+      userCode,
+      isBackground
     });
 
-    // Optimistically add user message
-    const userMessage: ChatMessage = {
-      role: 'user',
-      content: message,
-      timestamp: new Date().toISOString(),
-    };
-    set((state) => ({
-      messages: [...state.messages, userMessage],
-    }));
+    // Only add user message to chat if NOT a background request
+    if (!isBackground) {
+      const userMessage: ChatMessage = {
+        role: 'user',
+        content: message,
+        timestamp: new Date().toISOString(),
+      };
+      set((state) => ({
+        messages: [...state.messages, userMessage],
+      }));
+    }
 
     try {
       console.log("🚀 Sending to /chat/message API:", {
@@ -108,10 +114,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
         error: error.response?.data?.detail || 'Failed to send message',
         isLoading: false,
       });
-      // Remove optimistic user message on error
-      set((state) => ({
-        messages: state.messages.slice(0, -1),
-      }));
+      // Remove optimistic user message on error (only if it was added)
+      if (!isBackground) {
+        set((state) => ({
+          messages: state.messages.slice(0, -1),
+        }));
+      }
       throw error;
     }
   },

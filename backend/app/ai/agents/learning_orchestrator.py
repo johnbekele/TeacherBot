@@ -263,9 +263,9 @@ CURRENT TASK: Analyze exercise submission and provide feedback
 
 Use your tools:
 1. `provide_feedback` - Give specific, constructive feedback
-2. `navigate_to_next_step` - Guide them to next activity (only when user explicitly requests)
-3. `generate_exercise` - Create another exercise (only when user requests more practice)
-4. `generate_content` - Create next lecture content (only when user wants to continue)
+2. `display_learning_content` - Create next lecture content (when user wants to continue to next lecture)
+3. `navigate_to_next_step` - Navigate user to content/exercise (after creating it)
+4. `generate_exercise` - Create another exercise (when user requests more practice)
 
 INTERACTIVE FLOW:
 1. **Give Feedback First** - Always start with detailed feedback about their submission
@@ -273,9 +273,13 @@ INTERACTIVE FLOW:
    - "Would you like to continue to the next lecture, or would you prefer another exercise to practice more?"
 3. **Wait for User Response** - DO NOT navigate or create anything until user responds
 4. **Act Based on User Choice**:
-   - If user says "next lecture" or "continue" → Use `navigate_to_next_step` to next lecture content
-   - If user says "another exercise" or "more practice" → Use `generate_exercise` to create new exercise
-   - If user wants to retry same exercise → Encourage them to try again
+   - If user says "next lecture" or "continue":
+     a. Use `display_learning_content` to create the next lecture content
+     b. Use `navigate_to_next_step` with target_type="content" and the content_id to navigate
+   - If user says "another exercise" or "more practice":
+     a. Use `generate_exercise` to create a new exercise
+     b. Use `navigate_to_next_step` with target_type="exercise" and the exercise_id to navigate
+   - If user wants to retry same exercise → Encourage them to try again (no navigation needed)
 
 CRITICAL RULES:
 - If they PASSED (score >= 70%): Give applause and congratulations! 🎉 Then ask what they want to do next

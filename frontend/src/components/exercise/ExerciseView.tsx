@@ -33,18 +33,18 @@ export default function ExerciseView({ exerciseId, sessionId }: ExerciseViewProp
     if (!currentExercise) return;
 
     try {
-      // First submit to get grading results
+      // Submit code in background (no visible chat message)
       await submitCode(exerciseId, editorCode, currentExercise.type);
 
-      // Then send to chat for AI feedback and interaction
+      // Silently notify AI for feedback (in background)
       const { sendMessage } = useChatStore.getState();
       await sendMessage(
-        `I've submitted my code for this exercise. Here's my solution:\n\n\`\`\`${currentExercise.type}\n${editorCode}\n\`\`\`\n\nCan you review it and let me know how I did?`,
+        `[BACKGROUND] User submitted code for exercise. Please analyze and provide feedback.`,
         'exercise',
         exerciseId,
         editorCode
       );
-      console.log('💻 Code submission sent to AI via chat');
+      console.log('💻 Code submitted in background - waiting for AI feedback');
     } catch (err) {
       console.error('Failed to submit code:', err);
     }
@@ -54,15 +54,15 @@ export default function ExerciseView({ exerciseId, sessionId }: ExerciseViewProp
 
   const handleHint = async () => {
     try {
-      // Send hint request as natural conversation through chat (Phase 2.4)
+      // Send hint request in background
       const { sendMessage } = useChatStore.getState();
       await sendMessage(
-        'Can you give me a hint for this exercise?',
+        '[BACKGROUND] User requested a hint for this exercise.',
         'exercise',
         exerciseId,
         editorCode
       );
-      console.log('💡 Hint request sent to AI via chat');
+      console.log('💡 Hint request sent in background - AI will respond in chat');
     } catch (err) {
       console.error('Failed to get hint:', err);
     }

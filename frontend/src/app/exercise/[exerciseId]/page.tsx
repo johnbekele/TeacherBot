@@ -31,10 +31,25 @@ function ExercisePageContent({
   // Handle AI navigation actions
   const handleActionReceived = (action: any) => {
     console.log('AI Action received in exercise:', action);
-    if (action.type === 'show_exercise' && action.data.exercise_id) {
+
+    // Handle navigate_to_content actions
+    if (action.type === 'navigate_to_content' && action.content_id) {
+      const nodeId = searchParams.get('nodeId') || 'unknown';
+      const url = `/learn/${nodeId}?content=${action.content_id}${sessionId ? `&session=${sessionId}` : ''}`;
+      console.log('📚 Navigating to content:', url);
+      router.push(url);
+    }
+    // Handle navigate_to_exercise actions
+    else if (action.type === 'navigate_to_exercise' && action.exercise_id) {
+      const url = `/exercise/${action.exercise_id}${sessionId ? `?session=${sessionId}` : ''}`;
+      console.log('💪 Navigating to exercise:', url);
+      router.push(url);
+    }
+    // Legacy support for old action types
+    else if (action.type === 'show_exercise' && action.data?.exercise_id) {
       const url = `/exercise/${action.data.exercise_id}${sessionId ? `?session=${sessionId}` : ''}`;
       router.push(url);
-    } else if (action.type === 'display_content' && action.data.content_id) {
+    } else if (action.type === 'display_content' && action.data?.content_id) {
       const nodeId = searchParams.get('nodeId') || 'unknown';
       const url = `/learn/${nodeId}?content=${action.data.content_id}${sessionId ? `&session=${sessionId}` : ''}`;
       router.push(url);

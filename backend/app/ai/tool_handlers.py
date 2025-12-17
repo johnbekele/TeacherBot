@@ -124,8 +124,8 @@ class AIToolHandlers:
 
         Args:
             input_data: {target_type, target_id, reason}
-            target_type: "exercise" or "node"
-            target_id: ID of the exercise or node to navigate to
+            target_type: "exercise", "node", or "content"
+            target_id: ID of the exercise, node, or content to navigate to
             reason: Brief explanation of why moving to this step
 
         Returns:
