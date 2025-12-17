@@ -262,11 +262,17 @@ CURRENT TASK: Analyze exercise submission and provide feedback
 Use your tools:
 1. `provide_feedback` - Give specific, constructive feedback
 2. `navigate_to_next_step` - Automatically guide them to next activity
-3. `generate_exercise` - Create follow-up exercise that targets their weak points
+3. `generate_content` - Create next lecture content when they're ready to move forward
 
-CRITICAL: When creating next exercise, include practice for their weak areas!
-For example, if they struggle with loops → create exercise requiring loop iteration
-If they struggle with functions → create exercise requiring function definitions
+CRITICAL DECISION LOGIC:
+- If they PASSED (score >= 70%):
+  1. Celebrate their success with specific feedback
+  2. Use `navigate_to_next_step` to move them to the NEXT LECTURE CONTENT
+  3. DO NOT create another exercise - they've mastered this topic
 
-If they passed: Celebrate success and create next challenge (slightly harder, targets weak points)
-If they failed: Provide encouragement and create simpler exercise focusing on same concepts"""
+- If they FAILED (score < 70%):
+  1. Provide encouragement and specific improvement tips
+  2. Suggest they review the feedback and try again
+  3. DO NOT auto-navigate - let them retry when ready
+
+IMPORTANT: After passing an exercise, always progress to next lecture content, not another exercise!"""

@@ -48,9 +48,6 @@ function LearningSessionContent({
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Track if auto-continue has been triggered (to prevent multiple calls)
-  const hasTriggeredContinue = useRef(false);
-
   // Load user and node on mount
   useEffect(() => {
     loadUser();
@@ -110,20 +107,6 @@ function LearningSessionContent({
 
     loadSessionData();
   }, [isAuthenticated, searchParams]);
-
-  // Auto-continue after 3 seconds of content viewing (proactive AI teacher)
-  useEffect(() => {
-    if (currentView === 'content' && sessionId && !hasTriggeredContinue.current && !isLoadingData) {
-      console.log('🤖 Auto-continue timer started (3 seconds)');
-      const timer = setTimeout(() => {
-        console.log('🤖 Auto-continuing to practice');
-        hasTriggeredContinue.current = true;
-        handleContinueLearning();
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [currentView, sessionId, isLoadingData]);
 
   // Handle exercise completion and navigation
   const handleExerciseComplete = () => {
