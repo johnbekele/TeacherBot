@@ -122,10 +122,13 @@ class ChatService:
         # Get conversation history
         history = await self.get_session_history(session_id, limit=20)
 
-        # Build messages for Claude
+        # Build messages for Claude (filter out empty content to avoid API errors)
         messages = []
         for msg in history:
-            messages.append({"role": msg["role"], "content": msg["content"]})
+            content = msg.get("content", "")
+            # Skip messages with empty content (Claude API requirement)
+            if content and (isinstance(content, str) and content.strip() or isinstance(content, list) and len(content) > 0):
+                messages.append({"role": msg["role"], "content": content})
 
         # Add context to system prompt if provided
         enhanced_system = system_prompt
