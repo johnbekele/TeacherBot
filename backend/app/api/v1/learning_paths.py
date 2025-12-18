@@ -110,9 +110,10 @@ async def get_learning_paths(
     db: AsyncIOMotorDatabase = Depends(get_db),
     user_id: str = Depends(get_current_user_id)
 ):
-    """Get all available learning paths with progress"""
+    """Get all available learning paths with progress (both hardcoded and user-created)"""
     paths = []
 
+    # 1. Add hardcoded paths (python, go, javascript, infrastructure)
     for path_id, path_def in PATH_DEFINITIONS.items():
         # Get nodes for this path
         nodes = await get_nodes_by_prefix(db, path_def["node_prefixes"])
@@ -133,6 +134,30 @@ async def get_learning_paths(
             "in_progress_count": progress_data["in_progress_count"]
         })
 
+    # 2. Add user-created paths from MongoDB
+    user_paths_cursor = db.learning_paths.find({"user_id": user_id, "status": "active"})
+    user_paths = await user_paths_cursor.to_list(length=100)
+
+    for path_doc in user_paths:
+        # Get nodes for this path (using node_prefixes)
+        nodes = await get_nodes_by_prefix(db, path_doc.get("node_prefixes", [path_doc["path_id"]]))
+        node_ids = [n["node_id"] for n in nodes]
+
+        # Calculate progress
+        progress_data = await calculate_path_progress(db, user_id, node_ids)
+
+        paths.append({
+            "id": path_doc["path_id"],
+            "title": path_doc["title"],
+            "description": path_doc["description"],
+            "thumbnail": path_doc.get("thumbnail", "🎯"),
+            "color": path_doc.get("color", "#6366F1"),
+            "modules_count": progress_data["total_count"],
+            "progress": progress_data["progress"],
+            "completed_count": progress_data["completed_count"],
+            "in_progress_count": progress_data["in_progress_count"]
+        })
+
     return {"paths": paths}
 
 
@@ -143,11 +168,24 @@ async def get_learning_path_detail(
     user_id: str = Depends(get_current_user_id)
 ):
     """Get detailed information about a specific learning path with modules"""
-    # Validate path exists
-    if path_id not in PATH_DEFINITIONS:
-        raise HTTPException(status_code=404, detail="Learning path not found")
+    # Try to get path from hardcoded definitions first
+    if path_id in PATH_DEFINITIONS:
+        path_def = PATH_DEFINITIONS[path_id]
+    else:
+        # Try to get user-created path from MongoDB
+        path_doc = await db.learning_paths.find_one({"path_id": path_id, "user_id": user_id})
+        if not path_doc:
+            raise HTTPException(status_code=404, detail="Learning path not found")
 
-    path_def = PATH_DEFINITIONS[path_id]
+        # Convert MongoDB document to path_def format
+        path_def = {
+            "id": path_doc["path_id"],
+            "title": path_doc["title"],
+            "description": path_doc["description"],
+            "thumbnail": path_doc.get("thumbnail", "🎯"),
+            "color": path_doc.get("color", "#6366F1"),
+            "node_prefixes": path_doc.get("node_prefixes", [path_doc["path_id"]])
+        }
 
     # Get nodes for this path
     nodes = await get_nodes_by_prefix(db, path_def["node_prefixes"])

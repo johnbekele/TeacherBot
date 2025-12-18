@@ -360,6 +360,59 @@ class AIToolHandlers:
             "message": f"✅ Learning profile saved! Your personalized learning experience is ready."
         }
 
+    async def handle_create_learning_path(self, input_data: Dict) -> Dict:
+        """
+        Create a new learning path structure in database
+
+        Args:
+            input_data: {
+                path_id, title, description, thumbnail, color, category
+            }
+
+        Returns:
+            {success, path_id, message, created_path}
+        """
+        path_id = input_data["path_id"]
+
+        # Check if path already exists
+        existing = await self.db.learning_paths.find_one({"path_id": path_id, "user_id": self.user_id})
+        if existing:
+            return {
+                "success": False,
+                "message": f"Learning path '{path_id}' already exists! You can view it in your learning paths."
+            }
+
+        # Create learning path document
+        path_doc = {
+            "path_id": path_id,
+            "title": input_data["title"],
+            "description": input_data["description"],
+            "thumbnail": input_data.get("thumbnail", "🎯"),
+            "color": input_data.get("color", "#6366F1"),
+            "category": input_data.get("category", "custom"),
+            "user_id": self.user_id,
+            "created_by": "ai",
+            "created_at": datetime.utcnow(),
+            "status": "active",
+            "node_prefixes": [path_id]  # Nodes for this path should start with path_id
+        }
+
+        # Insert into database
+        await self.db.learning_paths.insert_one(path_doc)
+
+        return {
+            "success": True,
+            "path_id": path_id,
+            "message": f"✅ Created learning path '{input_data['title']}'! Now I'll create learning modules for this path. You can view the path in your Learning Paths section.",
+            "created_path": {
+                "path_id": path_id,
+                "title": input_data["title"],
+                "description": input_data["description"],
+                "thumbnail": path_doc["thumbnail"],
+                "color": path_doc["color"]
+            }
+        }
+
     async def handle_create_learning_node(self, input_data: Dict) -> Dict:
         """
         Create a new learning node in database and add to user's learning path

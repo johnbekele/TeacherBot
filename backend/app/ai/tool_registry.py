@@ -311,16 +311,52 @@ class ToolRegistry:
             }
         }
 
-        # Tool 9: Create Learning Node (For Planning AI!)
+        # Tool 9: Create Learning Path (For Planning AI!)
+        self.tools["create_learning_path"] = {
+            "name": "create_learning_path",
+            "description": "Create a new learning path structure/category that groups related nodes together. Use this FIRST when the user wants to learn a new topic area, THEN create nodes within it. This creates the visible path card in Learning Paths section.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "path_id": {
+                        "type": "string",
+                        "description": "Unique ID for the path (lowercase with hyphens, e.g., 'devops-fundamentals')"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Display title for the path (e.g., 'DevOps Fundamentals')"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Brief description of what this learning path covers"
+                    },
+                    "thumbnail": {
+                        "type": "string",
+                        "description": "Emoji icon for the path (e.g., '🐳' for Docker, '☸️' for Kubernetes)"
+                    },
+                    "color": {
+                        "type": "string",
+                        "description": "Hex color code for the path (e.g., '#0db7ed' for Docker blue)"
+                    },
+                    "category": {
+                        "type": "string",
+                        "description": "Category/domain (e.g., 'devops', 'backend', 'frontend', 'data-science')"
+                    }
+                },
+                "required": ["path_id", "title", "description"]
+            }
+        }
+
+        # Tool 10: Create Learning Node (For Planning AI!)
         self.tools["create_learning_node"] = {
             "name": "create_learning_node",
-            "description": "Create a new learning topic/node in the user's learning path. Use this AFTER analyzing what the user wants to learn. Creates actual clickable nodes that appear in the Learning Path.",
+            "description": "Create a new learning topic/node in the user's learning path. Use this AFTER creating a learning path. Node IDs should start with the path_id prefix. Creates actual clickable nodes that appear in the Learning Path.",
             "input_schema": {
                 "type": "object",
                 "properties": {
                     "node_id": {
                         "type": "string",
-                        "description": "Unique ID for the node (use lowercase with hyphens, e.g., 'docker-basics')"
+                        "description": "Unique ID for the node (use path prefix, e.g., 'devops-docker-basics' for a Docker node in DevOps path)"
                     },
                     "title": {
                         "type": "string",
