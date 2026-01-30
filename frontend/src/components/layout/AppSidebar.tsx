@@ -203,7 +203,7 @@ export function AppSidebar() {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user?.avatar} alt={user?.full_name || 'User'} />
+                    <AvatarImage src={(user as any)?.avatar} alt={user?.full_name || 'User'} />
                     <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
                       {user?.full_name?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
@@ -228,7 +228,7 @@ export function AppSidebar() {
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <Avatar className="h-8 w-8 rounded-lg">
-                      <AvatarImage src={user?.avatar} alt={user?.full_name || 'User'} />
+                      <AvatarImage src={(user as any)?.avatar} alt={user?.full_name || 'User'} />
                       <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
                         {user?.full_name?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>

@@ -52,7 +52,7 @@ export const useNodeStore = create<NodeState>((set, get) => ({
     }
 
     // If there's already a pending request for this node, wait for it
-    if (state._pendingRequests[nodeId]) {
+    if (nodeId in state._pendingRequests && state._pendingRequests[nodeId] !== undefined) {
       return state._pendingRequests[nodeId];
     }
 

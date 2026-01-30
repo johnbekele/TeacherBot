@@ -63,9 +63,10 @@ export default function DynamicContentRenderer({ content }: DynamicContentRender
               <ReactMarkdown
                 components={{
                   // Custom code block rendering
-                  code({ node, inline, className, children, ...props }) {
+                  code({ node, className, children, ...props }: any) {
                     const match = /language-(\w+)/.exec(className || '');
                     const language = match ? match[1] : 'text';
+                    const inline = !match;
 
                     return !inline ? (
                       <SyntaxHighlighter

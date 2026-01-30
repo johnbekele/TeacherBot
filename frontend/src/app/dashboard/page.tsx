@@ -20,7 +20,7 @@ export default function DashboardPage() {
   // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, []); // Empty deps - only run once
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -28,7 +28,7 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Set context to planning mode when entering dashboard - only run once when authenticated
+  // Set context to planning mode when entering dashboard
   useEffect(() => {
     if (isAuthenticated) {
       clearChat();
@@ -40,19 +40,19 @@ export default function DashboardPage() {
       else if (hour < 18) setGreeting('Good afternoon');
       else setGreeting('Good evening');
     }
-  }, [isAuthenticated]); // Removed clearChat and setContext - they don't need to trigger re-runs
+  }, [isAuthenticated]);
 
   if (authLoading) {
     return (
       <AppLayout contextType="planning" contextId="dashboard">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8 space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8 space-y-3">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-5 w-96" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <Card key={i}>
+              <Card key={i} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-10 w-10 rounded-lg" />
@@ -71,121 +71,121 @@ export default function DashboardPage() {
 
   return (
     <AppLayout contextType="planning" contextId="dashboard">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 animate-slide-up">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="mb-8 animate-fade-in-up">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             {greeting}, {user?.full_name?.split(' ')[0] || 'there'}!
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Ready to continue your learning journey?
           </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="animate-slide-up hover:scale-[1.02] transition-all duration-300">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <Card className="animate-fade-in-up group cursor-default">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Courses</CardTitle>
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <BookOpen className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Courses</CardTitle>
+              <div className="p-2.5 bg-primary/10 rounded-lg transition-colors group-hover:bg-primary/15">
+                <BookOpen className="w-4 h-4 text-primary" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Start learning today</p>
+              <div className="text-2xl font-bold text-foreground">0</div>
+              <p className="text-xs text-muted-foreground mt-1">Start learning today</p>
             </CardContent>
           </Card>
 
-          <Card className="animate-slide-up hover:scale-[1.02] transition-all duration-300" style={{ animationDelay: '100ms' }}>
+          <Card className="animate-fade-in-up group cursor-default" style={{ animationDelay: '50ms' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Overall Progress</CardTitle>
+              <div className="p-2.5 bg-success/10 rounded-lg transition-colors group-hover:bg-success/15">
+                <Target className="w-4 h-4 text-success" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0%</div>
-              <p className="text-xs text-muted-foreground">Track your journey</p>
+              <div className="text-2xl font-bold text-foreground">0%</div>
+              <p className="text-xs text-muted-foreground mt-1">Track your journey</p>
             </CardContent>
           </Card>
 
-          <Card className="animate-slide-up hover:scale-[1.02] transition-all duration-300" style={{ animationDelay: '200ms' }}>
+          <Card className="animate-fade-in-up group cursor-default" style={{ animationDelay: '100ms' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+              <div className="p-2.5 bg-info/10 rounded-lg transition-colors group-hover:bg-info/15">
+                <TrendingUp className="w-4 h-4 text-info" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Exercises finished</p>
+              <div className="text-2xl font-bold text-foreground">0</div>
+              <p className="text-xs text-muted-foreground mt-1">Exercises finished</p>
             </CardContent>
           </Card>
 
-          <Card className="animate-slide-up hover:scale-[1.02] transition-all duration-300" style={{ animationDelay: '300ms' }}>
+          <Card className="animate-fade-in-up group cursor-default" style={{ animationDelay: '150ms' }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Time Spent</CardTitle>
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Time Spent</CardTitle>
+              <div className="p-2.5 bg-warning/10 rounded-lg transition-colors group-hover:bg-warning/15">
+                <Clock className="w-4 h-4 text-warning" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0h</div>
-              <p className="text-xs text-muted-foreground">Learning time</p>
+              <div className="text-2xl font-bold text-foreground">0h</div>
+              <p className="text-xs text-muted-foreground mt-1">Learning time</p>
             </CardContent>
           </Card>
         </div>
 
         {/* AI Assistant Card */}
-        <Card className="mb-8 bg-gradient-to-br from-primary/10 to-transparent animate-slide-up border-primary/20" style={{ animationDelay: '400ms' }}>
-          <CardHeader>
+        <Card className="mb-8 animate-fade-in-up overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-transparent" style={{ animationDelay: '200ms' }}>
+          <CardHeader className="pb-4">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg flex-shrink-0 animate-float">
+              <div className="p-3 bg-primary/10 rounded-xl flex-shrink-0 animate-bounce-gentle">
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
-              <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">AI Learning Assistant</CardTitle>
-                <CardDescription className="text-base">
+              <div className="flex-1 space-y-1">
+                <CardTitle className="text-xl sm:text-2xl">AI Learning Assistant</CardTitle>
+                <CardDescription className="text-sm sm:text-base leading-relaxed">
                   Tell me what you want to learn, and I'll create a personalized learning path just for you. I can adapt to your pace, track your progress, and provide real-time feedback.
                 </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="bg-card rounded-lg p-4 border shadow-sm">
-              <p className="text-sm font-medium mb-3">Try asking:</p>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2 group cursor-pointer">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary transition-transform duration-300 group-hover:scale-150"></div>
-                  <span className="group-hover:text-primary transition-colors">"I want to learn Docker from scratch"</span>
+            <div className="bg-muted/50 rounded-xl p-4 border border-border/50">
+              <p className="text-sm font-medium text-foreground mb-3">Try asking:</p>
+              <ul className="space-y-2.5 text-sm">
+                <li className="flex items-center gap-3 group cursor-pointer transition-colors hover:text-primary">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary transition-transform duration-200 group-hover:scale-150"></div>
+                  <span>"I want to learn Docker from scratch"</span>
                 </li>
-                <li className="flex items-center gap-2 group cursor-pointer">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary transition-transform duration-300 group-hover:scale-150"></div>
-                  <span className="group-hover:text-primary transition-colors">"Create a Kubernetes learning path for me"</span>
+                <li className="flex items-center gap-3 group cursor-pointer transition-colors hover:text-primary">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary transition-transform duration-200 group-hover:scale-150"></div>
+                  <span>"Create a Kubernetes learning path for me"</span>
                 </li>
-                <li className="flex items-center gap-2 group cursor-pointer">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary transition-transform duration-300 group-hover:scale-150"></div>
-                  <span className="group-hover:text-primary transition-colors">"Help me master CI/CD pipelines"</span>
+                <li className="flex items-center gap-3 group cursor-pointer transition-colors hover:text-primary">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary transition-transform duration-200 group-hover:scale-150"></div>
+                  <span>"Help me master CI/CD pipelines"</span>
                 </li>
               </ul>
             </div>
-            <p className="text-sm text-primary font-medium mt-4 flex items-center gap-2 animate-pulse">
+            <p className="text-sm text-primary font-medium mt-4 flex items-center gap-2 animate-pulse-soft">
               <ArrowRight className="w-4 h-4" />
-              Use the chat panel on the right to start →
+              Use the chat panel on the right to start
             </p>
           </CardContent>
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <Card
-            className="cursor-pointer group animate-slide-up hover:border-primary transition-all duration-300 hover:shadow-lg"
-            style={{ animationDelay: '500ms' }}
+            className="cursor-pointer group animate-fade-in-up hover:border-primary/50 transition-all duration-200"
+            style={{ animationDelay: '250ms' }}
             onClick={() => router.push('/learning-paths')}
           >
             <CardHeader>
-              <CardTitle className="group-hover:text-primary transition-colors">
+              <CardTitle className="text-lg group-hover:text-primary transition-colors">
                 Browse Learning Paths
               </CardTitle>
               <CardDescription>
@@ -201,12 +201,12 @@ export default function DashboardPage() {
           </Card>
 
           <Card
-            className="cursor-pointer group animate-slide-up hover:border-primary transition-all duration-300 hover:shadow-lg"
-            style={{ animationDelay: '600ms' }}
+            className="cursor-pointer group animate-fade-in-up hover:border-primary/50 transition-all duration-200"
+            style={{ animationDelay: '300ms' }}
             onClick={() => router.push('/progress')}
           >
             <CardHeader>
-              <CardTitle className="group-hover:text-primary transition-colors">
+              <CardTitle className="text-lg group-hover:text-primary transition-colors">
                 View Progress
               </CardTitle>
               <CardDescription>

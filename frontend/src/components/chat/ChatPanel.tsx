@@ -63,12 +63,13 @@ export default function ChatPanel({
     if (pendingActions.length > 0) {
       pendingActions.forEach((action) => {
         // Handle navigation actions from AI automatically
-        if (action.type === 'navigate_to_exercise' && action.exercise_id) {
-          console.log(`🚀 Auto-navigating to exercise: ${action.exercise_id}`);
-          router.push(`/exercise/${action.exercise_id}?session=${sessionId}`);
-        } else if (action.type === 'navigate_to_node' && action.node_id) {
-          console.log(`🚀 Auto-navigating to node: ${action.node_id}`);
-          router.push(`/learn/${action.node_id}`);
+        const actionType = action.type as string;
+        if (actionType === 'navigate_to_exercise' && (action as any).exercise_id) {
+          console.log(`Auto-navigating to exercise: ${(action as any).exercise_id}`);
+          router.push(`/exercise/${(action as any).exercise_id}?session=${sessionId}`);
+        } else if (actionType === 'navigate_to_node' && (action as any).node_id) {
+          console.log(`Auto-navigating to node: ${(action as any).node_id}`);
+          router.push(`/learn/${(action as any).node_id}`);
         } else if (onActionReceived) {
           // Pass other actions to parent handler
           onActionReceived(action);
@@ -143,7 +144,7 @@ export default function ChatPanel({
 
         <AnimatePresence mode="sync">
           {messages.map((msg, idx) => (
-            <MessageBubble key={`msg-${idx}-${msg.timestamp}`} message={msg} index={idx} />
+            <MessageBubble key={`msg-${idx}-${msg.timestamp}`} message={msg as any} index={idx} />
           ))}
         </AnimatePresence>
 

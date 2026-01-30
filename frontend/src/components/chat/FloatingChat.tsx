@@ -6,7 +6,6 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Send,
@@ -41,12 +40,12 @@ export default function FloatingChat() {
 
   // Memoize filtered messages to prevent recalculation on every render
   const planningMessages = useMemo(
-    () => messages.filter(m => !m.context_type || m.context_type === 'planning'),
+    () => messages.filter(m => !(m as any).context_type || (m as any).context_type === 'planning'),
     [messages]
   );
 
   const aboutMessages = useMemo(
-    () => messages.filter(m => m.context_type === 'about'),
+    () => messages.filter(m => (m as any).context_type === 'about'),
     [messages]
   );
 
@@ -88,7 +87,7 @@ export default function FloatingChat() {
     return (
       <Button
         size="lg"
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:scale-110 transition-transform z-50"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-primary hover:scale-105 transition-all duration-200 z-50"
         onClick={() => setIsOpen(true)}
       >
         <MessageSquare className="h-6 w-6" />
@@ -100,35 +99,37 @@ export default function FloatingChat() {
   if (isMinimized) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
-        <Card className="w-80 shadow-xl">
+        <Card className="w-72 sm:w-80 shadow-xl border-border/60">
           <CardHeader className="cursor-pointer p-4" onClick={() => setIsMinimized(false)}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                <CardTitle className="text-sm">AI Assistant</CardTitle>
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                </div>
+                <CardTitle className="text-sm font-medium">AI Assistant</CardTitle>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 w-6 p-0"
+                  className="h-7 w-7 p-0 hover:bg-accent"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsMinimized(false);
                   }}
                 >
-                  <Maximize2 className="h-3 w-3" />
+                  <Maximize2 className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 w-6 p-0"
+                  className="h-7 w-7 p-0 hover:bg-accent"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsOpen(false);
                   }}
                 >
-                  <X className="h-3 w-3" />
+                  <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -140,36 +141,40 @@ export default function FloatingChat() {
 
   // Full chat window
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 max-h-[600px]">
-      <Card className="flex flex-col h-full shadow-2xl">
-        <CardHeader className="bg-gradient-to-r from-primary/10 to-purple-100/50 dark:from-primary/20 dark:to-purple-900/30 pb-3">
+    <div className="fixed bottom-6 right-6 z-50 w-[calc(100vw-3rem)] sm:w-96 max-h-[min(600px,calc(100vh-6rem))]">
+      <Card className="flex flex-col h-full shadow-xl border-border/60">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 border-b border-border/50 pb-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">AI Assistant</CardTitle>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <MessageSquare className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-base font-semibold">AI Assistant</CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  Choose your assistant below
+                </CardDescription>
+              </div>
             </div>
             <div className="flex gap-1">
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
+                className="h-8 w-8 p-0 hover:bg-background/80"
                 onClick={() => setIsMinimized(true)}
               >
-                <Minimize2 className="h-3 w-3" />
+                <Minimize2 className="h-4 w-4" />
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 w-7 p-0"
+                className="h-8 w-8 p-0 hover:bg-background/80"
                 onClick={() => setIsOpen(false)}
               >
-                <X className="h-3 w-3" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <CardDescription className="text-xs">
-            Choose your assistant below
-          </CardDescription>
         </CardHeader>
 
         <Tabs
@@ -178,27 +183,29 @@ export default function FloatingChat() {
           className="flex flex-col flex-1 overflow-hidden"
         >
           <div className="px-4 pt-3">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="planning" className="text-xs">
-                <Calendar className="h-3 w-3 mr-1" />
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+              <TabsTrigger value="planning" className="text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
                 Planner
               </TabsTrigger>
-              <TabsTrigger value="about" className="text-xs">
-                <Info className="h-3 w-3 mr-1" />
+              <TabsTrigger value="about" className="text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Info className="h-3.5 w-3.5 mr-1.5" />
                 About
               </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="planning" className="flex-1 overflow-hidden m-0">
-            <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-b">
-              <div className="flex items-start gap-2">
-                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+            <div className="px-4 py-2.5 bg-primary/5 border-b border-border/50">
+              <div className="flex items-start gap-2.5">
+                <div className="p-1.5 bg-primary/10 rounded-md mt-0.5">
+                  <Calendar className="h-3.5 w-3.5 text-primary" />
+                </div>
                 <div>
-                  <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
+                  <p className="text-xs font-medium text-foreground">
                     Planning Assistant
                   </p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Creates learning plans and nodes. Asks questions, then builds your plan.
                   </p>
                 </div>
@@ -214,14 +221,16 @@ export default function FloatingChat() {
           </TabsContent>
 
           <TabsContent value="about" className="flex-1 overflow-hidden m-0">
-            <div className="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 border-b">
-              <div className="flex items-start gap-2">
-                <Info className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-0.5" />
+            <div className="px-4 py-2.5 bg-info/5 border-b border-border/50">
+              <div className="flex items-start gap-2.5">
+                <div className="p-1.5 bg-info/10 rounded-md mt-0.5">
+                  <Info className="h-3.5 w-3.5 text-info" />
+                </div>
                 <div>
-                  <p className="text-xs font-medium text-purple-900 dark:text-purple-100">
+                  <p className="text-xs font-medium text-foreground">
                     About & Help
                   </p>
-                  <p className="text-xs text-purple-700 dark:text-purple-300">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Learn about the app features and how to use them
                   </p>
                 </div>
@@ -236,7 +245,7 @@ export default function FloatingChat() {
             />
           </TabsContent>
 
-          <div className="p-3 border-t bg-background">
+          <div className="p-3 border-t border-border/50 bg-background">
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <Input
                 type="text"
@@ -245,13 +254,13 @@ export default function FloatingChat() {
                 onKeyPress={handleKeyPress}
                 placeholder={`Ask ${activeAssistant === 'planning' ? 'Planner' : 'About'}...`}
                 disabled={isLoading}
-                className="flex-1 text-sm"
+                className="flex-1 text-sm h-9"
               />
               <Button
                 type="submit"
                 disabled={!inputValue.trim() || isLoading}
                 size="icon"
-                className="shrink-0"
+                className="shrink-0 h-9 w-9"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -282,12 +291,14 @@ const ChatMessages = memo(function ChatMessages({
   messagesEndRef: React.RefObject<HTMLDivElement>;
 }) {
   return (
-    <CardContent className="flex-1 overflow-y-auto p-3 space-y-3" style={{ maxHeight: "350px" }}>
+    <CardContent className="flex-1 overflow-y-auto p-3 space-y-3" style={{ maxHeight: "320px" }}>
       {messages.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
-          <Sparkles className="h-10 w-10 mb-3 text-primary/50" />
-          <p className="text-sm font-medium mb-1">Start a conversation!</p>
-          <p className="text-xs">I'm here to help you</p>
+        <div className="flex flex-col items-center justify-center h-full text-center py-8">
+          <div className="p-3 bg-primary/10 rounded-xl mb-3">
+            <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-sm font-medium text-foreground mb-1">Start a conversation!</p>
+          <p className="text-xs text-muted-foreground">I'm here to help you</p>
         </div>
       )}
 
@@ -295,44 +306,44 @@ const ChatMessages = memo(function ChatMessages({
         <div
           key={idx}
           className={cn(
-            "flex",
+            "flex animate-fade-in",
             msg.role === "user" ? "justify-end" : "justify-start"
           )}
         >
           <div
             className={cn(
-              "max-w-[85%] rounded-lg px-3 py-2 text-sm",
+              "max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm",
               msg.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted/70 text-foreground"
             )}
           >
-            <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>p]:leading-relaxed">
               {msg.content}
             </ReactMarkdown>
             <div
               className={cn(
-                "text-xs mt-1",
-                msg.role === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
+                "text-[10px] mt-1.5 opacity-70",
+                msg.role === "user" ? "text-primary-foreground" : "text-muted-foreground"
               )}
             >
-              {new Date(msg.timestamp).toLocaleTimeString()}
+              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         </div>
       ))}
 
       {isLoading && (
-        <div className="flex justify-start">
-          <div className="bg-muted rounded-lg px-3 py-2">
-            <div className="flex space-x-2">
-              <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
+        <div className="flex justify-start animate-fade-in">
+          <div className="bg-muted/70 rounded-xl px-4 py-3">
+            <div className="flex space-x-1.5">
+              <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"></div>
               <div
-                className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
                 style={{ animationDelay: "150ms" }}
               ></div>
               <div
-                className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce"
                 style={{ animationDelay: "300ms" }}
               ></div>
             </div>
@@ -341,16 +352,16 @@ const ChatMessages = memo(function ChatMessages({
       )}
 
       {error && (
-        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 animate-fade-in">
           <div className="flex items-start gap-2">
-            <AlertCircle className="h-3 w-3 text-destructive mt-0.5 shrink-0" />
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-xs text-destructive">{error}</p>
+              <p className="text-xs text-destructive leading-relaxed">{error}</p>
               <Button
                 variant="link"
                 size="sm"
                 onClick={clearError}
-                className="h-auto p-0 text-xs text-destructive hover:text-destructive/80"
+                className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 mt-1"
               >
                 Dismiss
               </Button>
@@ -363,4 +374,3 @@ const ChatMessages = memo(function ChatMessages({
     </CardContent>
   );
 });
-

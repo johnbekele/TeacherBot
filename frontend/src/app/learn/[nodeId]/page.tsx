@@ -345,7 +345,6 @@ function LearningSessionContent({ nodeId }: { nodeId: string }) {
     <AppLayout
       contextType="learning_qa"
       contextId={nodeId}
-      showRightPanel={true}
     >
       <div className="max-w-4xl mx-auto py-4 px-4">
         {/* Compact Header */}
