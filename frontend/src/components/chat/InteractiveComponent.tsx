@@ -13,12 +13,12 @@ export default function InteractiveComponent({ component }: InteractiveComponent
     return null;
   }
 
-  // Code Execution Result
+  // Code Execution Result (actual execution - legacy)
   if (component.type === 'code_execution') {
     return (
-      <div className="mt-3 rounded-lg border border-green-200 bg-green-50 overflow-hidden">
-        <div className="bg-green-100 px-4 py-2 border-b border-green-200">
-          <span className="text-sm font-medium text-green-800">
+      <div className="mt-3 rounded-lg border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950 overflow-hidden">
+        <div className="bg-green-100 dark:bg-green-900 px-4 py-2 border-b border-green-200 dark:border-green-800">
+          <span className="text-sm font-medium text-green-800 dark:text-green-200">
             ▶️ Code Executed ({component.language})
           </span>
         </div>
@@ -37,6 +37,43 @@ export default function InteractiveComponent({ component }: InteractiveComponent
         {/* Output */}
         <div className="px-4 py-3 bg-white dark:bg-gray-900">
           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Output:</div>
+          <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
+            {component.output || '(no output)'}
+          </pre>
+        </div>
+      </div>
+    );
+  }
+
+  // AI-Simulated Code Execution (no actual execution - cost-effective)
+  if (component.type === 'code_execution_simulated') {
+    return (
+      <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950 overflow-hidden">
+        <div className="bg-blue-100 dark:bg-blue-900 px-4 py-2 border-b border-blue-200 dark:border-blue-800 flex items-center justify-between">
+          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+            🤖 AI-Predicted Output ({component.language})
+          </span>
+          <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded">
+            Simulated
+          </span>
+        </div>
+
+        {/* Code */}
+        <div className="px-4 py-2 bg-gray-900">
+          <SyntaxHighlighter
+            language={component.language}
+            style={vscDarkPlus}
+            customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
+          >
+            {component.code}
+          </SyntaxHighlighter>
+        </div>
+
+        {/* Predicted Output */}
+        <div className="px-4 py-3 bg-white dark:bg-gray-900">
+          <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+            <span>Expected Output:</span>
+          </div>
           <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap font-mono">
             {component.output || '(no output)'}
           </pre>

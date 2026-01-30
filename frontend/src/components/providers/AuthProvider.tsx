@@ -11,9 +11,9 @@ export default function AuthProvider({
   const { loadUser } = useAuthStore();
 
   useEffect(() => {
-    // Load user from localStorage token on mount
+    // Load user from localStorage token on mount - only run once
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   return <>{children}</>;
 }

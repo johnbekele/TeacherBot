@@ -45,6 +45,12 @@ class LearningOrchestrator:
         # Get user context for personalization
         user_context = await get_user_context_for_ai(self.db, user_id)
 
+        # Check for pre-generated content
+        pre_generated = await self.db.course_content.find_one({
+            "node_id": node_id,
+            "user_id": user_id
+        })
+
         # Get user's progress on this node
         progress = await self.db.user_progress.find_one({
             "user_id": user_id,
@@ -58,11 +64,11 @@ class LearningOrchestrator:
             context_id=node_id
         )
 
-        # Initialize tool registry for this user
-        tool_registry = ToolRegistry(self.db, user_id)
+        # Initialize tool registry with session context
+        tool_registry = ToolRegistry(self.db, user_id, session_id)
 
         # Build orchestrator system prompt
-        system_prompt = self._build_orchestrator_prompt(node, user_context, progress)
+        system_prompt = self._build_orchestrator_prompt(node, user_context, progress, pre_generated)
 
         # Initial message to AI
         if progress and progress.get("status") == "in_progress":
@@ -119,8 +125,8 @@ class LearningOrchestrator:
             context_id=exercise_id
         )
 
-        # Initialize tool registry
-        tool_registry = ToolRegistry(self.db, user_id)
+        # Initialize tool registry with session context
+        tool_registry = ToolRegistry(self.db, user_id, session_id)
 
         # Build context for AI
         context_data = {
@@ -178,8 +184,8 @@ IMPORTANT: Analyze their submission and provide feedback in chat:
         Returns:
             AI response with possible tool invocations
         """
-        # Initialize tool registry
-        tool_registry = ToolRegistry(self.db, user_id)
+        # Initialize tool registry with session context
+        tool_registry = ToolRegistry(self.db, user_id, session_id)
 
         # Get session to understand context
         session = await self.db.chat_sessions.find_one({"_id": ObjectId(session_id)})
@@ -205,7 +211,8 @@ IMPORTANT: Analyze their submission and provide feedback in chat:
         self,
         node: Dict,
         user_context: str,
-        progress: Optional[Dict]
+        progress: Optional[Dict],
+        pre_generated: Optional[Dict] = None
     ) -> str:
         """Build system prompt for learning orchestrator"""
 
@@ -225,6 +232,27 @@ CURRENT PROGRESS:
 Status: {progress.get('status', 'not_started')}
 Completion: {progress.get('completion_percentage', 0)}%"""
 
+        # Check for pre-generated content
+        pre_gen_info = ""
+        if pre_generated and pre_generated.get('lecture'):
+            lecture = pre_generated['lecture']
+            section_titles = [s.get('heading', '') for s in lecture.get('sections', [])[:5]]
+            num_exercises = len(pre_generated.get('exercises', []))
+
+            pre_gen_info = f"""
+
+✅ PRE-GENERATED CONTENT AVAILABLE
+This node has complete lecture content ready with all 5 sections.
+
+ACTION REQUIRED:
+1. Use `display_learning_content` tool NOW to show this content
+2. Display ALL sections: {', '.join(section_titles)}
+3. AFTER user reads it, THEN offer practice exercises
+
+Content summary: {len(section_titles)} sections, {num_exercises} exercises ready
+
+DO NOT create new content - use what's already generated and personalized for this user."""
+
         enhanced_prompt = f"""{base_prompt}
 
 {node_info}
@@ -233,6 +261,7 @@ Completion: {progress.get('completion_percentage', 0)}%"""
 
 USER CONTEXT:
 {user_context}
+{pre_gen_info}
 
 Remember: Use your tools to make things happen! Don't just talk about teaching - use `display_learning_content` to actually create content, `generate_exercise` to create practice problems, and `navigate_to_next_step` to move them forward."""
 

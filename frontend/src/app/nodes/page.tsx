@@ -11,9 +11,10 @@ export default function NodesPage() {
   const { nodes, loadNodes } = useNodeStore();
   const router = useRouter();
 
+  // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -25,7 +26,7 @@ export default function NodesPage() {
     if (isAuthenticated) {
       loadNodes();
     }
-  }, [isAuthenticated, loadNodes]);
+  }, [isAuthenticated]); // Removed loadNodes from deps
 
   if (isLoading) {
     return (

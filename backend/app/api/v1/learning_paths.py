@@ -91,18 +91,38 @@ async def calculate_path_progress(db: AsyncIOMotorDatabase, user_id: str, node_i
 
 
 def determine_module_status(node: Dict, progress_map: Dict, previous_completed: bool) -> str:
-    """Determine the status of a module based on progress and prerequisites"""
+    """
+    Determine the status of a module based on progress and prerequisites
+
+    Enhanced with prerequisite verification to ensure accurate unlocking logic
+    """
     node_id = node["node_id"]
     completion = progress_map.get(node_id, 0)
 
+    # Already completed
     if completion >= 100:
         return "completed"
-    elif completion > 0:
+
+    # In progress
+    if completion > 0:
         return "in_progress"
-    elif previous_completed:
-        return "available"
-    else:
+
+    # Check prerequisites if specified in node
+    prerequisites = node.get("prerequisites", [])
+    if prerequisites:
+        # All prerequisites must be completed
+        prereqs_completed = all(
+            progress_map.get(prereq_id, 0) >= 100
+            for prereq_id in prerequisites
+        )
+        if not prereqs_completed:
+            return "locked"
+
+    # Sequential check: previous node must be completed
+    if not previous_completed:
         return "locked"
+
+    return "available"
 
 
 @router.get("/")
@@ -114,10 +134,15 @@ async def get_learning_paths(
     paths = []
 
     # 1. Add hardcoded paths (python, go, javascript, infrastructure)
+    # BUT only if they have at least one node
     for path_id, path_def in PATH_DEFINITIONS.items():
         # Get nodes for this path
         nodes = await get_nodes_by_prefix(db, path_def["node_prefixes"])
         node_ids = [n["node_id"] for n in nodes]
+
+        # Skip if no nodes exist for this path
+        if not node_ids:
+            continue
 
         # Calculate progress
         progress_data = await calculate_path_progress(db, user_id, node_ids)
@@ -131,7 +156,8 @@ async def get_learning_paths(
             "modules_count": progress_data["total_count"],
             "progress": progress_data["progress"],
             "completed_count": progress_data["completed_count"],
-            "in_progress_count": progress_data["in_progress_count"]
+            "in_progress_count": progress_data["in_progress_count"],
+            "is_hardcoded": True  # Mark as hardcoded (can't be deleted)
         })
 
     # 2. Add user-created paths from MongoDB
@@ -142,6 +168,10 @@ async def get_learning_paths(
         # Get nodes for this path (using node_prefixes)
         nodes = await get_nodes_by_prefix(db, path_doc.get("node_prefixes", [path_doc["path_id"]]))
         node_ids = [n["node_id"] for n in nodes]
+
+        # Skip if no nodes exist
+        if not node_ids:
+            continue
 
         # Calculate progress
         progress_data = await calculate_path_progress(db, user_id, node_ids)
@@ -155,7 +185,8 @@ async def get_learning_paths(
             "modules_count": progress_data["total_count"],
             "progress": progress_data["progress"],
             "completed_count": progress_data["completed_count"],
-            "in_progress_count": progress_data["in_progress_count"]
+            "in_progress_count": progress_data["in_progress_count"],
+            "is_hardcoded": False  # User-created, can be deleted
         })
 
     return {"paths": paths}
@@ -240,4 +271,88 @@ async def get_learning_path_detail(
         "completed_count": progress_data["completed_count"],
         "total_count": progress_data["total_count"],
         "modules": modules
+    }
+
+
+@router.delete("/{path_id}")
+async def delete_learning_path(
+    path_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    Delete a user-created learning path and all associated content
+
+    NOTE: Hardcoded paths (python, go, javascript, infrastructure) cannot be deleted
+    """
+    # Check if this is a hardcoded path
+    if path_id in PATH_DEFINITIONS:
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot delete hardcoded learning paths. They will be hidden automatically when empty."
+        )
+
+    # Check if path exists and belongs to user
+    path = await db.learning_paths.find_one({
+        "path_id": path_id,
+        "user_id": user_id
+    })
+
+    if not path:
+        raise HTTPException(
+            status_code=404,
+            detail="Learning path not found or you don't have permission to delete it"
+        )
+
+    print(f"🗑️ Deleting learning path: {path_id} for user: {user_id}")
+
+    # Get all nodes for this path
+    nodes = await get_nodes_by_prefix(db, path.get("node_prefixes", [path_id]))
+    node_ids = [n["node_id"] for n in nodes]
+
+    # Delete all associated content
+    if node_ids:
+        # Delete nodes
+        result = await db.learning_nodes.delete_many({"node_id": {"$in": node_ids}})
+        print(f"   Deleted {result.deleted_count} nodes")
+
+        # Delete exercises
+        result = await db.exercises.delete_many({"node_id": {"$in": node_ids}})
+        print(f"   Deleted {result.deleted_count} exercises")
+
+        # Delete course content
+        result = await db.course_content.delete_many({
+            "path_id": path_id,
+            "user_id": user_id
+        })
+        print(f"   Deleted {result.deleted_count} course content documents")
+
+        # Delete user progress
+        result = await db.user_progress.delete_many({
+            "user_id": user_id,
+            "node_id": {"$in": node_ids}
+        })
+        print(f"   Deleted {result.deleted_count} progress entries")
+
+        # Delete exercise attempts
+        exercise_ids = [ex["exercise_id"] for ex in await db.exercises.find(
+            {"node_id": {"$in": node_ids}},
+            {"exercise_id": 1}
+        ).to_list(length=1000)]
+
+        if exercise_ids:
+            result = await db.exercise_attempts.delete_many({
+                "user_id": user_id,
+                "exercise_id": {"$in": exercise_ids}
+            })
+            print(f"   Deleted {result.deleted_count} exercise attempts")
+
+    # Delete the learning path document
+    await db.learning_paths.delete_one({"_id": path["_id"]})
+
+    print(f"✅ Learning path {path_id} deleted successfully")
+
+    return {
+        "success": True,
+        "message": f"Learning path '{path['title']}' and all associated content deleted successfully"
     }

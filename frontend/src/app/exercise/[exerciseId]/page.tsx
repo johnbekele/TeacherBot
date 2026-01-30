@@ -18,9 +18,10 @@ function ExercisePageContent({
   // Get session ID from URL
   const sessionId = searchParams.get('session');
 
+  // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

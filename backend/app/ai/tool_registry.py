@@ -13,10 +13,12 @@ from app.ai.behavioral_tools import BehavioralTools, get_tool_definitions as get
 class ToolRegistry:
     """Registry for AI-callable tools with Claude API definitions"""
 
-    def __init__(self, db: AsyncIOMotorDatabase, user_id: str):
+    def __init__(self, db: AsyncIOMotorDatabase, user_id: str, session_id: str = None):
         self.db = db
         self.user_id = user_id
+        self.session_id = session_id  # NEW: Track session for validation
         self.handlers = AIToolHandlers(db, user_id)
+        self.handlers.current_session_id = session_id  # Pass to handlers
         self.behavioral_tools = BehavioralTools(db, user_id)
         self.tools = {}
         self._register_tools()

@@ -10,9 +10,213 @@ from app.models.exercise import (
     ExerciseResultResponse,
     ExerciseAttemptInDB
 )
-from app.services.grading_service import grade_exercise
 
 router = APIRouter(prefix="/exercises", tags=["Exercises"])
+
+
+# ========================================
+# ADAPTIVE PROGRESSION HELPER FUNCTIONS
+# ========================================
+
+def categorize_submission_outcome(
+    score: int,
+    passed: bool,
+    weak_points: list,
+    user_profile: dict
+) -> str:
+    """
+    Categorize submission outcome for adaptive progression
+
+    Returns:
+        "perfect" - Score >= 90, no weak points
+        "passed_with_weaknesses" - Score >= 70, but has weak points
+        "needs_remediation" - Score < 70, multiple weak points
+        "failed" - Score < 50
+    """
+    if score >= 90 and not weak_points:
+        return "perfect"
+    elif score >= 70:
+        if len(weak_points) > 2:
+            return "needs_remediation"
+        return "passed_with_weaknesses"
+    elif score >= 50:
+        return "needs_remediation"
+    else:
+        return "failed"
+
+
+async def get_next_node_in_path(db: AsyncIOMotorDatabase, current_node_id: str) -> Optional[dict]:
+    """Get the next node in the learning path sequence"""
+    # Extract path_id from node_id (e.g., "python-variables" -> "python")
+    path_id = current_node_id.split("-")[0] if "-" in current_node_id else current_node_id
+
+    # Get all nodes in this path, sorted by order
+    nodes = await db.learning_nodes.find(
+        {"node_id": {"$regex": f"^{path_id}"}}
+    ).sort("node_id", 1).to_list(length=100)
+
+    if not nodes:
+        return None
+
+    # Find current node index
+    try:
+        current_idx = next(i for i, node in enumerate(nodes) if node["node_id"] == current_node_id)
+        if current_idx < len(nodes) - 1:
+            return nodes[current_idx + 1]
+    except StopIteration:
+        pass
+
+    return None
+
+
+async def get_node_exercises(db: AsyncIOMotorDatabase, node_id: str) -> list:
+    """Get all exercises for a node from course_content or exercises collection"""
+    # First try course_content (pre-generated)
+    content = await db.course_content.find_one({"node_id": node_id})
+    if content and content.get("exercises"):
+        return content["exercises"]
+
+    # Fallback to exercises collection
+    exercises = await db.exercises.find({"node_id": node_id}).to_list(length=100)
+    return exercises
+
+
+async def generate_remedial_exercise(
+    db: AsyncIOMotorDatabase,
+    user_id: str,
+    node_id: str,
+    weak_points: list,
+    difficulty: str = "beginner"
+) -> str:
+    """
+    Generate a targeted remedial exercise focusing on weak points
+
+    Returns: exercise_id of generated exercise
+    """
+    from app.ai.content_generator import generate_targeted_exercise
+
+    weak_point_topics = [wp for wp in weak_points if isinstance(wp, str)]
+
+    try:
+        exercise = await generate_targeted_exercise(
+            db=db,
+            user_id=user_id,
+            node_id=node_id,
+            focus_topics=weak_point_topics,
+            difficulty=difficulty,
+            context="remedial"
+        )
+
+        # Store in exercises collection
+        await db.exercises.insert_one(exercise)
+
+        print(f"✅ Generated remedial exercise: {exercise['exercise_id']}")
+        return exercise["exercise_id"]
+
+    except Exception as e:
+        print(f"❌ Failed to generate remedial exercise: {e}")
+        # Fallback: return a basic exercise for this node
+        fallback = await db.exercises.find_one({"node_id": node_id, "difficulty": "beginner"})
+        return fallback["exercise_id"] if fallback else None
+
+
+async def determine_next_action(
+    db: AsyncIOMotorDatabase,
+    user_id: str,
+    exercise: dict,
+    outcome: str,
+    weak_points: list
+) -> dict:
+    """
+    Determine what happens next based on submission outcome
+
+    Decision Tree:
+    1. outcome == "perfect" → Next node
+    2. outcome == "passed_with_weaknesses" → Next exercise in sequence or remedial
+    3. outcome == "needs_remediation" → Generate remedial exercise
+    4. outcome == "failed" → Retry with hint
+    """
+
+    if outcome == "perfect":
+        # Advance to next node
+        next_node = await get_next_node_in_path(db, exercise["node_id"])
+        if next_node:
+            return {
+                "type": "navigate_to_node",
+                "node_id": next_node["node_id"],
+                "reason": "Perfect score! Moving to next topic.",
+                "message": "🎉 Excellent work! Let's continue to the next topic."
+            }
+        else:
+            return {
+                "type": "complete_path",
+                "message": "🏆 Congratulations! You've completed this learning path!"
+            }
+
+    elif outcome == "passed_with_weaknesses":
+        # Check if this is first exercise or subsequent
+        node_exercises = await get_node_exercises(db, exercise["node_id"])
+
+        try:
+            current_idx = next(i for i, ex in enumerate(node_exercises)
+                             if ex.get("exercise_id") == exercise["exercise_id"])
+
+            if current_idx < len(node_exercises) - 1:
+                # More exercises in sequence
+                next_exercise = node_exercises[current_idx + 1]
+                return {
+                    "type": "navigate_to_exercise",
+                    "exercise_id": next_exercise["exercise_id"],
+                    "reason": "Good job! Let's practice more to strengthen your skills.",
+                    "message": "✅ Well done! Moving to the next exercise."
+                }
+        except StopIteration:
+            pass
+
+        # Generate remedial exercise for weak points
+        remedial_exercise_id = await generate_remedial_exercise(
+            db, user_id, exercise["node_id"], weak_points
+        )
+
+        if remedial_exercise_id:
+            return {
+                "type": "navigate_to_exercise",
+                "exercise_id": remedial_exercise_id,
+                "reason": "Let's address some areas that need practice.",
+                "message": "📝 I've created a targeted exercise to help you master these concepts."
+            }
+        else:
+            # Fallback: move to next node
+            next_node = await get_next_node_in_path(db, exercise["node_id"])
+            if next_node:
+                return {
+                    "type": "navigate_to_node",
+                    "node_id": next_node["node_id"],
+                    "reason": "Good progress! Let's move forward.",
+                    "message": "✅ Good work! Moving to the next topic."
+                }
+
+    elif outcome == "needs_remediation":
+        # Generate easier exercise + provide hint
+        remedial_exercise_id = await generate_remedial_exercise(
+            db, user_id, exercise["node_id"], weak_points, difficulty="beginner"
+        )
+
+        if remedial_exercise_id:
+            return {
+                "type": "navigate_to_exercise",
+                "exercise_id": remedial_exercise_id,
+                "reason": "Let's practice the fundamentals before moving forward.",
+                "message": "💪 Don't worry! Let's break this down with a simpler exercise.",
+                "auto_hint": True  # Automatically show first hint
+            }
+
+    # Default: failed - retry current exercise
+    return {
+        "type": "retry",
+        "message": "Let's try again! Review the lecture if needed.",
+        "show_hint_button": True
+    }
 
 
 @router.get("/{exercise_id}", response_model=dict)
@@ -21,9 +225,40 @@ async def get_exercise(
     user_id: str = Depends(get_current_user_id),
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
-    """Get exercise details"""
+    """Get exercise details - checks both exercises and course_content collections"""
 
     exercise = await db.exercises.find_one({"exercise_id": exercise_id})
+
+    # If not found in exercises collection, check course_content
+    if not exercise:
+        # Extract node_id from exercise_id (e.g., "python-basics-ex1" -> "python-basics")
+        # Exercise IDs are formatted as "{node_id}-ex{number}"
+        parts = exercise_id.rsplit("-ex", 1)
+        if len(parts) == 2:
+            node_id = parts[0]
+
+            # Search in course_content for this user
+            content = await db.course_content.find_one({
+                "node_id": node_id,
+                "user_id": user_id
+            })
+
+            if content and content.get("exercises"):
+                # Find the specific exercise in the pre-generated content
+                for ex in content["exercises"]:
+                    if ex.get("exercise_id") == exercise_id:
+                        exercise = ex
+                        # Add node_id if missing
+                        exercise["node_id"] = node_id
+                        # Infer type from node_id
+                        if "python" in node_id:
+                            exercise["type"] = "python"
+                        elif "js" in node_id or "javascript" in node_id:
+                            exercise["type"] = "javascript"
+                        else:
+                            exercise["type"] = "python"  # default
+                        break
+
     if not exercise:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -42,13 +277,13 @@ async def get_exercise(
 
     return {
         "exercise": {
-            "exercise_id": exercise["exercise_id"],
-            "title": exercise["title"],
-            "description": exercise["description"],
-            "prompt": exercise["prompt"],
+            "exercise_id": exercise.get("exercise_id", exercise_id),
+            "title": exercise.get("title", "Exercise"),
+            "description": exercise.get("description", ""),
+            "prompt": exercise.get("prompt", ""),
             "starter_code": exercise.get("starter_code", ""),
-            "type": exercise["type"],
-            "difficulty": exercise["difficulty"]
+            "type": exercise.get("type", "python"),
+            "difficulty": exercise.get("difficulty", "beginner")
         },
         "user_progress": {
             "attempts": len(attempts),
@@ -68,8 +303,31 @@ async def submit_exercise(
 ):
     """Submit exercise code for AI assessment with interactive feedback"""
 
-    # Verify exercise exists
+    # Verify exercise exists - check both collections
     exercise = await db.exercises.find_one({"exercise_id": exercise_id})
+
+    # If not found, check course_content
+    if not exercise:
+        parts = exercise_id.rsplit("-ex", 1)
+        if len(parts) == 2:
+            node_id = parts[0]
+            content = await db.course_content.find_one({
+                "node_id": node_id,
+                "user_id": user_id
+            })
+            if content and content.get("exercises"):
+                for ex in content["exercises"]:
+                    if ex.get("exercise_id") == exercise_id:
+                        exercise = ex
+                        exercise["node_id"] = node_id
+                        if "python" in node_id:
+                            exercise["type"] = "python"
+                        elif "js" in node_id or "javascript" in node_id:
+                            exercise["type"] = "javascript"
+                        else:
+                            exercise["type"] = "python"
+                        break
+
     if not exercise:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -201,6 +459,45 @@ async def submit_exercise(
         upsert=True
     )
 
+    # ========================================
+    # ADAPTIVE PROGRESSION - Determine Next Action
+    # ========================================
+
+    # Get user profile for categorization
+    user_profile = await db.user_profiles.find_one({"user_id": user_id}) or {}
+
+    # Categorize submission outcome
+    outcome = categorize_submission_outcome(
+        score=score,
+        passed=passed,
+        weak_points=weak_points,
+        user_profile=user_profile
+    )
+
+    print(f"📊 Submission outcome: {outcome}")
+
+    # Determine next action based on outcome
+    next_action = await determine_next_action(
+        db=db,
+        user_id=user_id,
+        exercise=exercise,
+        outcome=outcome,
+        weak_points=weak_points
+    )
+
+    print(f"🚀 Next action: {next_action.get('type')} - {next_action.get('message')}")
+
+    # Update attempt document with outcome and next_action
+    await db.exercise_attempts.update_one(
+        {"_id": ObjectId(submission_id)},
+        {
+            "$set": {
+                "outcome": outcome,
+                "next_action": next_action
+            }
+        }
+    )
+
     # Now send to Learning Orchestrator for interactive feedback in chat
     try:
         await orchestrator.handle_exercise_submission(
@@ -221,7 +518,9 @@ async def submit_exercise(
         "status": "completed",
         "message": "Code submitted! Check the AI chat panel for detailed interactive feedback.",
         "score": score,
-        "passed": passed
+        "passed": passed,
+        "outcome": outcome,
+        "next_action": next_action  # Include next action for frontend auto-progression
     }
 
 

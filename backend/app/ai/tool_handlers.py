@@ -6,6 +6,7 @@ from typing import Dict
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
+import re
 
 
 class AIToolHandlers:
@@ -56,6 +57,59 @@ class AIToolHandlers:
             {success, exercise_id}
         """
         exercise_id = f"ai_ex_{str(ObjectId())}"
+        node_id = input_data.get("node_id", "dynamic")
+
+        # Validate content was shown first (content gate)
+        if node_id != "dynamic":
+            # Check if content was displayed
+            content_shown = await self.db.learning_content.find_one({
+                "created_for_user": self.user_id,
+                "title": {"$regex": f".*{node_id}.*", "$options": "i"}
+            })
+
+            if not content_shown:
+                # Check if pre-generated content exists but wasn't displayed
+                pre_gen = await self.db.course_content.find_one({
+                    "node_id": node_id,
+                    "user_id": self.user_id
+                })
+
+                if pre_gen:
+                    return {
+                        "success": False,
+                        "error": "content_not_shown",
+                        "message": f"⚠️ You must display the lecture content first using `display_learning_content`. Pre-generated content is available - show it to the user before creating exercises.",
+                        "available_sections": len(pre_gen.get('lecture', {}).get('sections', []))
+                    }
+                else:
+                    # No pre-generated content, but still need to create content first
+                    return {
+                        "success": False,
+                        "error": "content_not_shown",
+                        "message": f"⚠️ You must display lecture content first using `display_learning_content`. Create and show educational content before exercises."
+                    }
+
+        # Fetch user profile for personalization
+        user_profile = await self.db.user_profiles.find_one({"user_id": self.user_id})
+        if not user_profile:
+            user_profile = {"experience_level": "beginner", "learning_style": "mixed"}
+
+        experience_level = user_profile.get("experience_level", "beginner")
+
+        # Auto-adjust difficulty if not specified
+        if "difficulty" not in input_data or not input_data["difficulty"]:
+            input_data["difficulty"] = {
+                "beginner": "beginner",
+                "intermediate": "intermediate",
+                "advanced": "advanced"
+            }.get(experience_level, "beginner")
+
+        # Add scaffolding for beginners
+        if experience_level == "beginner" and "starter_code" in input_data:
+            starter = input_data["starter_code"]
+            if "TODO" not in starter and "# Your code here" not in starter:
+                # Add helpful TODO comments for beginners
+                input_data["starter_code"] = f"# TODO: Implement the solution\n# Hint: Break it into small steps\n\n{starter}"
 
         # Prepare test cases
         # Handle both string and list formats
@@ -209,82 +263,65 @@ class AIToolHandlers:
 
     async def handle_execute_code(self, input_data: Dict) -> Dict:
         """
-        Execute code and return output for display in chat
+        Simulate code execution using AI and return predicted output.
+
+        Instead of actually running code (costly on cloud), AI analyzes
+        the code and predicts what the output would be.
 
         Args:
             input_data: {code, language, explanation}
 
         Returns:
-            {success, output, execution_time, component}
+            {success, output, simulated, component}
         """
-        import subprocess
-        import time
+        from anthropic import AsyncAnthropic
+        from app.config import get_settings
 
+        settings = get_settings()
         code = input_data["code"]
         language = input_data["language"]
         explanation = input_data["explanation"]
 
         try:
-            start_time = time.time()
+            # Use Claude Haiku for fast, cheap output prediction
+            client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
 
-            if language == "python":
-                # Execute Python code
-                result = subprocess.run(
-                    ["python3", "-c", code],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                output = result.stdout if result.returncode == 0 else result.stderr
+            response = await client.messages.create(
+                model="claude-3-5-haiku-20241022",
+                max_tokens=500,
+                temperature=0,
+                messages=[{
+                    "role": "user",
+                    "content": f"""Predict the exact output of this {language} code. Return ONLY the output that would appear in the terminal/console, nothing else. If there would be no output, return "(no output)". If there would be an error, return the error message.
 
-            elif language == "javascript":
-                # Execute JavaScript with Node
-                result = subprocess.run(
-                    ["node", "-e", code],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                output = result.stdout if result.returncode == 0 else result.stderr
+```{language}
+{code}
+```"""
+                }]
+            )
 
-            elif language == "bash":
-                # Execute Bash command
-                result = subprocess.run(
-                    ["bash", "-c", code],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                output = result.stdout if result.returncode == 0 else result.stderr
-            else:
-                output = f"Unsupported language: {language}"
-
-            execution_time = time.time() - start_time
+            predicted_output = response.content[0].text.strip()
 
             # Return component data for frontend to render
             return {
                 "success": True,
-                "output": output.strip(),
-                "execution_time": round(execution_time, 3),
+                "output": predicted_output,
+                "simulated": True,
                 "explanation": explanation,
                 "component": {
-                    "type": "code_execution",
+                    "type": "code_execution_simulated",
                     "language": language,
                     "code": code,
-                    "output": output.strip()
+                    "output": predicted_output
                 }
             }
 
-        except subprocess.TimeoutExpired:
-            return {
-                "success": False,
-                "output": "Code execution timed out (5 second limit)",
-                "component": {"type": "error", "message": "Execution timeout"}
-            }
         except Exception as e:
+            print(f"AI simulation error: {str(e)}")
             return {
                 "success": False,
-                "output": f"Execution error: {str(e)}",
+                "output": f"Could not simulate output: {str(e)}",
+                "simulated": True,
                 "component": {"type": "error", "message": str(e)}
             }
 
@@ -413,6 +450,47 @@ class AIToolHandlers:
             }
         }
 
+    async def _validate_planning_prerequisites(self, session_id: str) -> Dict:
+        """
+        Validate Planning AI asked required questions before creating nodes
+
+        Returns:
+            {
+                "can_create_nodes": bool,
+                "questions_asked": int,
+                "missing": List[str]
+            }
+        """
+        # Get recent chat messages for this session
+        messages = await self.db.chat_messages.find({
+            "session_id": session_id,
+            "role": "assistant"
+        }).sort("timestamp", -1).limit(10).to_list(length=10)
+
+        # Check for required question patterns
+        required_patterns = [
+            r"experience.*level|level.*experience",  # Experience level question
+            r"used.*before|worked.*with|familiar",   # Prior usage question
+            r"similar.*tool|other.*tools"            # Similar tools question
+        ]
+
+        questions_asked = sum(
+            1 for pattern in required_patterns
+            if any(re.search(pattern, msg.get("content", ""), re.IGNORECASE)
+                   for msg in messages)
+        )
+
+        missing = []
+        if questions_asked < 2:
+            missing.append("Experience level")
+            missing.append("Prior knowledge")
+
+        return {
+            "can_create_nodes": questions_asked >= 2,
+            "questions_asked": questions_asked,
+            "missing": missing
+        }
+
     async def handle_create_learning_node(self, input_data: Dict) -> Dict:
         """
         Create a new learning node in database and add to user's learning path
@@ -427,6 +505,18 @@ class AIToolHandlers:
             {success, node_id, message, created_node}
         """
         node_id = input_data["node_id"]
+
+        # Validate planning prerequisites (must ask 2+ questions first)
+        if hasattr(self, 'current_session_id') and self.current_session_id:
+            validation = await self._validate_planning_prerequisites(self.current_session_id)
+
+            if not validation["can_create_nodes"]:
+                return {
+                    "success": False,
+                    "error": "prerequisite_not_met",
+                    "message": f"⚠️ Please ask the user about: {', '.join(validation['missing'])}. You've only asked {validation['questions_asked']}/2 required questions.",
+                    "required_questions": ["Experience level with this topic", "Prior knowledge or similar tools used"]
+                }
 
         # Check if node already exists
         existing = await self.db.learning_nodes.find_one({"node_id": node_id})
@@ -478,10 +568,53 @@ class AIToolHandlers:
             upsert=True
         )
 
+        # Trigger bulk content generation if enough nodes created
+        # Extract path_id from node_id (e.g., "python-variables" -> "python")
+        path_id = node_id.split("-")[0] if "-" in node_id else node_id
+
+        # Count nodes in this path
+        nodes_in_path_count = await self.db.learning_nodes.count_documents({
+            "node_id": {"$regex": f"^{path_id}"}
+        })
+
+        # If we've reached 3+ nodes, trigger bulk generation
+        if nodes_in_path_count >= 3:
+            # Check if content already generated for this path/user
+            existing_content = await self.db.course_content.count_documents({
+                "path_id": path_id,
+                "user_id": self.user_id
+            })
+
+            # Only generate if not already generated
+            if existing_content == 0:
+                import asyncio
+                from app.ai.content_generator import generate_full_course_content
+
+                # Get user profile for personalization
+                user_profile = await self.db.user_profiles.find_one({"user_id": self.user_id}) or {}
+
+                # Get path info if it exists
+                path_doc = await self.db.learning_paths.find_one({"path_id": path_id, "user_id": self.user_id})
+                path_description = path_doc.get("description", "") if path_doc else f"Learn {path_id}"
+
+                print(f"🚀 Triggering bulk content generation for path: {path_id} ({nodes_in_path_count} nodes)")
+
+                # Trigger async generation (don't block)
+                asyncio.create_task(
+                    generate_full_course_content(
+                        db=self.db,
+                        user_id=self.user_id,
+                        path_id=path_id,
+                        path_description=path_description,
+                        target_nodes=[],  # Will fetch from DB
+                        user_profile=user_profile
+                    )
+                )
+
         return {
             "success": True,
             "node_id": node_id,
-            "message": f"✅ Created learning node '{input_data['title']}'! It's now available in your learning path. You can click on it to start learning.",
+            "message": f"✅ Created learning node '{input_data['title']}'! It's now available in your learning path. You can click on it to start learning." + (f" 📚 Generating personalized course content in background..." if nodes_in_path_count >= 3 else ""),
             "created_node": {
                 "node_id": node_id,
                 "title": input_data["title"],

@@ -15,9 +15,10 @@ export default function LearningPathsPage() {
   const [pathsLoading, setPathsLoading] = useState(true);
   const [pathsError, setPathsError] = useState<string | null>(null);
 
+  // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

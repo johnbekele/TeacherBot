@@ -31,12 +31,8 @@ class Settings(BaseSettings):
     # AI
     ANTHROPIC_API_KEY: str = ""
 
-    # Sandbox
-    SANDBOX_TIMEOUT: int = 30  # seconds
-    SANDBOX_MEMORY_LIMIT: str = "256m"
-    SANDBOX_CPU_LIMIT: str = "0.5"
+    # Code limits (for AI simulation)
     MAX_CODE_LENGTH: int = 10000
-    MAX_OUTPUT_SIZE: int = 10240  # 10KB
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 100

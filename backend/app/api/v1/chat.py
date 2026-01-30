@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 from typing import Optional, List
 import json
-from anthropic import AsyncAnthropic
+import re
 
 from app.dependencies import get_db, get_current_user_id
 from app.ai.agents.tutor_agent import TutorAgent
@@ -18,61 +18,62 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 settings = get_settings()
 
 
-async def should_use_orchestrator(message: str, context_type: str) -> bool:
+def should_use_orchestrator(message: str, context_type: str) -> bool:
     """
     Determine if message should use LearningOrchestrator (with tools)
-    vs TutorAgent (no tools) using semantic intent detection with Claude Haiku.
+    vs TutorAgent (no tools) using fast pattern matching.
 
-    Returns True if tools are needed for this message
+    OPTIMIZED: Removed expensive AI API call, uses regex patterns only.
+    Returns True if tools are likely needed for this message.
     """
+    # NEVER use orchestrator for Q&A-only contexts (instant content flow)
+    if context_type in ["learning_qa", "exercise_qa"]:
+        print(f"💬 Q&A-only context ({context_type}), using TutorAgent")
+        return False
+
     # Always use orchestrator for these contexts
     if context_type in ["planning", "learning_session", "onboarding"]:
         return True
 
-    # Use Claude Haiku for lightweight semantic intent detection
-    try:
-        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    message_lower = message.lower()
 
-        prompt = f"""Analyze this student message and determine if it requires TOOLS (actions like creating exercises, displaying content, executing code, generating quizzes) or just EXPLANATION (answering questions, explaining concepts).
+    # Fast keyword checks (no regex needed for simple patterns)
+    tool_keywords = [
+        "create", "generate", "make", "build", "show me",
+        "exercise", "quiz", "practice", "challenge",
+        "execute", "run", "demo", "example",
+        "want to learn", "teach me", "learn about",
+        "help me learn", "learning plan", "learning path"
+    ]
 
-Message: "{message}"
-
-TOOLS are needed for:
-- Creating/generating exercises, challenges, or quizzes
-- Displaying learning content or tutorials
-- Executing or demonstrating code
-- Building interactive components
-- Creating learning plans or nodes
-- Providing practice problems
-
-EXPLANATION is sufficient for:
-- Answering conceptual questions
-- Explaining how things work
-- Debugging help
-- Clarifying concepts
-
-Respond with only valid JSON in this exact format:
-{{"requires_tools": true/false, "intent": "brief description"}}"""
-
-        response = await client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}]
-        )
-
-        # Parse response
-        response_text = response.content[0].text.strip()
-        result = json.loads(response_text)
-
-        print(f"🔍 Intent detection: message='{message[:50]}...' -> requires_tools={result.get('requires_tools', False)}, intent='{result.get('intent', 'unknown')}'")
-
-        return result.get("requires_tools", False)
-
-    except Exception as e:
-        # Fallback to safe default on error
-        print(f"⚠️ Intent detection error: {str(e)}, defaulting to orchestrator (safe)")
-        # When in doubt, use orchestrator (safer than missing tool requirements)
+    if any(kw in message_lower for kw in tool_keywords):
+        print(f"🎯 Tool keywords detected, using orchestrator")
         return True
+
+    # Regex patterns for more complex matches
+    tool_patterns = [
+        r"create.*path", r"give me.*exercise", r"let.*practice",
+        r"show.*how.*works", r"can you.*demonstrate"
+    ]
+
+    if any(re.search(pattern, message_lower) for pattern in tool_patterns):
+        print(f"🎯 Tool pattern matched, using orchestrator")
+        return True
+
+    # Q&A patterns - use simpler TutorAgent
+    qa_patterns = [
+        r"^what (is|are|does)", r"^how (do|does|can|to)",
+        r"^why (is|are|do|does)", r"^when (do|does|should)",
+        r"^can you explain", r"^explain", r"difference between",
+        r"\?$"  # Questions ending with ?
+    ]
+
+    if any(re.search(pattern, message_lower) for pattern in qa_patterns):
+        print(f"💬 Q&A pattern detected, using TutorAgent")
+        return False
+
+    # Default: use orchestrator for safety (tools available if needed)
+    return True
 
 
 class ChatMessageRequest(BaseModel):
@@ -99,8 +100,22 @@ async def send_chat_message(
     # Debug logging
     print(f"📥 Received message with context_type='{request.context_type}', message='{request.message[:50]}...'")
 
+    # Auto-detect planning context from message
+    if request.context_type == "general":
+        planning_patterns = [
+            r"i want to learn", r"teach me", r"create.*path",
+            r"learn about", r"i need to learn", r"show me how"
+        ]
+
+        for pattern in planning_patterns:
+            if re.search(pattern, request.message, re.IGNORECASE):
+                original = request.context_type
+                request.context_type = "planning"
+                print(f"🔄 AUTO-DETECTED: Changed context '{original}' → 'planning' based on message content")
+                break
+
     # Determine if we need tools (LearningOrchestrator) or simple Q&A (TutorAgent)
-    use_orchestrator = await should_use_orchestrator(request.message, request.context_type)
+    use_orchestrator = should_use_orchestrator(request.message, request.context_type)
     print(f"🔍 Routing decision: use_orchestrator={use_orchestrator}")
 
     # ROUTE 1: Use LearningOrchestrator with tools
@@ -119,11 +134,17 @@ async def send_chat_message(
             context_id=request.context_id or "general"
         )
 
-        # Initialize tool registry
-        tool_registry = ToolRegistry(db, user_id)
+        # Initialize tool registry with session context
+        tool_registry = ToolRegistry(db, user_id, session_id)
 
         # Load user profile with weak points for adaptive teaching
         user_profile = await db.user_profiles.find_one({"user_id": user_id})
+
+        # Enforce onboarding for new users attempting planning
+        if not user_profile and request.context_type == "planning":
+            print("⚠️ User has no profile, redirecting to onboarding")
+            request.context_type = "onboarding"
+
         weak_points_info = ""
         if user_profile and user_profile.get("weak_points"):
             weak_topics = [wp.get("topic", "") for wp in user_profile["weak_points"][-5:]]
@@ -189,6 +210,27 @@ async def send_chat_message(
                     context_data = context_data or {}
                     context_data["exercise"] = exercise
             elif request.context_type == "node":
+                node = await db.learning_nodes.find_one({"node_id": request.context_id})
+                if node:
+                    context_data = context_data or {}
+                    context_data["node"] = node
+            # For learning_qa context, include current learning content
+            elif request.context_type == "learning_qa":
+                # Fetch pre-generated content for this node
+                content = await db.course_content.find_one({
+                    "node_id": request.context_id,
+                    "user_id": user_id
+                })
+                if content:
+                    context_data = context_data or {}
+                    # Include lecture content (summary) for context
+                    lecture = content.get("lecture", {})
+                    context_data["learning_content"] = {
+                        "title": lecture.get("title", ""),
+                        "summary": lecture.get("summary", ""),
+                        "topics_covered": [s.get("heading") for s in lecture.get("sections", [])]
+                    }
+                # Also get node info
                 node = await db.learning_nodes.find_one({"node_id": request.context_id})
                 if node:
                     context_data = context_data or {}

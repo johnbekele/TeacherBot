@@ -8,9 +8,10 @@ export default function Home() {
   const router = useRouter();
   const { isAuthenticated, isLoading, loadUser } = useAuthStore();
 
+  // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   useEffect(() => {
     if (!isLoading) {

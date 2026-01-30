@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import auth, nodes, exercises, progress, chat, onboarding, user_context, learning_session, learning_paths
+from app.api.v1 import auth, nodes, exercises, progress, chat, onboarding, user_context, learning_session, learning_paths, course_content
 
 api_router = APIRouter()
 
@@ -12,3 +12,4 @@ api_router.include_router(onboarding.router)
 api_router.include_router(user_context.router)
 api_router.include_router(learning_session.router)
 api_router.include_router(learning_paths.router, prefix="/learning-paths", tags=["learning_paths"])
+api_router.include_router(course_content.router, prefix="/course-content", tags=["course_content"])

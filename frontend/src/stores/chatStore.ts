@@ -68,6 +68,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isBackground
     });
 
+    // Auto-detect planning intent
+    const planningKeywords = [
+      /i want to learn/i, /teach me/i, /create.*path/i,
+      /learn about/i, /i need to learn/i, /show me how/i
+    ];
+
+    let finalContextType = contextType;
+    if (contextType === 'general') {
+      for (const pattern of planningKeywords) {
+        if (pattern.test(message)) {
+          finalContextType = 'planning';
+          console.log('🎯 Auto-detected planning intent, setting context_type="planning"');
+          break;
+        }
+      }
+    }
+
     // Only add user message to chat if NOT a background request
     if (!isBackground) {
       const userMessage: ChatMessage = {
@@ -83,14 +100,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       console.log("🚀 Sending to /chat/message API:", {
         message: message.substring(0, 50),
-        context_type: contextType,
+        context_type: finalContextType,
         context_id: contextId,
         user_code: userCode
       });
 
       const response = await api.sendChatMessage({
         message,
-        context_type: contextType,
+        context_type: finalContextType,
         context_id: contextId,
         user_code: userCode,
       });

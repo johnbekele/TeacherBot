@@ -17,11 +17,9 @@ export default function RightPanel({
   userCode,
   onActionReceived,
 }: RightPanelProps) {
-  // Debug logging
-  console.log("RightPanel received:", `contextType="${contextType}", contextId="${contextId}", sessionId="${sessionId}"`);
-
   return (
-    <div className="flex w-full lg:w-1/2 xl:w-2/5 flex-col bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 border-l">
+    <div className="flex flex-col h-full">
+      {/* Chat panel fills the fixed container, has its own internal scroll */}
       <ChatPanel
         sessionId={sessionId}
         contextType={contextType}

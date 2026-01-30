@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, ReactNode, useState, useMemo, useCallback } from 'react';
 
 interface ChatContextType {
   contextType: string;
@@ -19,15 +19,24 @@ export function ChatContextProvider({ children }: { children: ReactNode }) {
   const [contextId, setContextId] = useState<string | undefined>();
   const [sessionId, setSessionId] = useState<string | undefined>();
 
-  const setContext = (newContextType: string, newContextId?: string, newSessionId?: string) => {
+  // Memoize setContext to prevent unnecessary re-renders
+  const setContext = useCallback((newContextType: string, newContextId?: string, newSessionId?: string) => {
     console.log("ChatContext.setContext called:", { newContextType, newContextId, newSessionId });
     setContextType(newContextType);
     setContextId(newContextId);
     setSessionId(newSessionId);
-  };
+  }, []);
+
+  // Memoize context value to prevent re-renders when values haven't changed
+  const contextValue = useMemo(() => ({
+    contextType,
+    contextId,
+    sessionId,
+    setContext
+  }), [contextType, contextId, sessionId, setContext]);
 
   return (
-    <ChatContext.Provider value={{ contextType, contextId, sessionId, setContext }}>
+    <ChatContext.Provider value={contextValue}>
       {children}
     </ChatContext.Provider>
   );

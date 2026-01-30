@@ -10,7 +10,6 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { AppSidebar } from './AppSidebar';
-import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 
 interface AppLayoutProps {
@@ -41,7 +40,7 @@ export default function AppLayout({
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="flex flex-col">
+      <SidebarInset className="flex flex-col h-screen max-h-screen">
         {/* Header */}
         <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex w-full items-center justify-between px-4">
@@ -57,20 +56,25 @@ export default function AppLayout({
         </header>
 
         {/* Main Content Area with Conditional Dual Panels */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           {showRightPanel ? (
             // Dual panel layout for learning/exercise pages
-            <div className="flex flex-col lg:flex-row w-full">
-              {/* Left Panel - Learning Pad */}
-              <LeftPanel>{children}</LeftPanel>
+            // Left panel scrolls independently, Right panel stays fixed
+            <div className="flex w-full h-full min-h-0">
+              {/* Left Panel - Learning Pad (scrollable content) */}
+              <div className="w-full lg:w-1/2 xl:w-3/5 h-full overflow-y-auto scroll-smooth bg-white dark:bg-gray-950">
+                {children}
+              </div>
 
-              {/* Right Panel - AI Chat */}
-              <RightPanel
-                sessionId={sessionId}
-                contextType={contextType}
-                contextId={contextId}
-                onActionReceived={onActionReceived}
-              />
+              {/* Right Panel - AI Chat (fixed in place, doesn't scroll with content) */}
+              <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 h-full flex-col border-l bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 overflow-hidden">
+                <RightPanel
+                  sessionId={sessionId}
+                  contextType={contextType}
+                  contextId={contextId}
+                  onActionReceived={onActionReceived}
+                />
+              </div>
             </div>
           ) : (
             // Full width content for other pages

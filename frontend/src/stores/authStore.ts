@@ -10,6 +10,8 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   _hasHydrated: boolean;
+  _lastLoadTime: number;  // Track when we last loaded user
+  _loadPromise: Promise<void> | null;  // Prevent duplicate requests
 
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -19,15 +21,20 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void;
 }
 
+// Minimum time between loadUser API calls (5 minutes)
+const LOAD_USER_THROTTLE_MS = 5 * 60 * 1000;
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
       isLoading: true,
       error: null,
       _hasHydrated: false,
+      _lastLoadTime: 0,
+      _loadPromise: null,
 
   login: async (credentials) => {
     console.log('Store: Starting login...');
@@ -82,29 +89,57 @@ export const useAuthStore = create<AuthState>()(
   },
 
   loadUser: async () => {
+    const state = get();
+
+    // If already authenticated and recently loaded, skip API call
+    if (state.isAuthenticated && state.user && (Date.now() - state._lastLoadTime < LOAD_USER_THROTTLE_MS)) {
+      set({ isLoading: false });
+      return;
+    }
+
+    // If there's already a pending request, wait for it
+    if (state._loadPromise) {
+      return state._loadPromise;
+    }
+
     const token = localStorage.getItem('access_token');
     if (!token) {
       set({ isAuthenticated: false, isLoading: false });
       return;
     }
 
-    set({ isLoading: true });
-    try {
-      const user = await api.getCurrentUser();
-      set({
-        user,
-        token,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (error) {
-      set({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
+    // If we have user data from persistence and it's recent, use it
+    if (state.isAuthenticated && state.user && state._hasHydrated) {
+      set({ isLoading: false, _lastLoadTime: Date.now() });
+      return;
     }
+
+    set({ isLoading: true });
+
+    const loadPromise = (async () => {
+      try {
+        const user = await api.getCurrentUser();
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          _lastLoadTime: Date.now(),
+          _loadPromise: null,
+        });
+      } catch (error) {
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+          _loadPromise: null,
+        });
+      }
+    })();
+
+    set({ _loadPromise: loadPromise });
+    return loadPromise;
   },
 
   clearError: () => set({ error: null }),

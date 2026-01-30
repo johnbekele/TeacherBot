@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { useChatStore } from "@/stores/chatStore";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -39,12 +39,24 @@ export default function FloatingChat() {
     clearError,
   } = useChatStore();
 
+  // Memoize filtered messages to prevent recalculation on every render
+  const planningMessages = useMemo(
+    () => messages.filter(m => !m.context_type || m.context_type === 'planning'),
+    [messages]
+  );
+
+  const aboutMessages = useMemo(
+    () => messages.filter(m => m.context_type === 'about'),
+    [messages]
+  );
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!inputValue.trim() || isLoading) return;
@@ -58,14 +70,18 @@ export default function FloatingChat() {
     } catch (err) {
       console.error("Failed to send message:", err);
     }
-  };
+  }, [inputValue, isLoading, sendMessage, activeAssistant]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e);
+      handleSendMessage(e as any);
     }
-  };
+  }, [handleSendMessage]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  }, []);
 
   // Floating button when closed
   if (!isOpen) {
@@ -189,7 +205,7 @@ export default function FloatingChat() {
               </div>
             </div>
             <ChatMessages
-              messages={messages.filter(m => !m.context_type || m.context_type === 'planning')}
+              messages={planningMessages}
               isLoading={isLoading}
               error={error}
               clearError={clearError}
@@ -212,7 +228,7 @@ export default function FloatingChat() {
               </div>
             </div>
             <ChatMessages
-              messages={messages.filter(m => m.context_type === 'about')}
+              messages={aboutMessages}
               isLoading={isLoading}
               error={error}
               clearError={clearError}
@@ -225,7 +241,7 @@ export default function FloatingChat() {
               <Input
                 type="text"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 placeholder={`Ask ${activeAssistant === 'planning' ? 'Planner' : 'About'}...`}
                 disabled={isLoading}
@@ -251,8 +267,8 @@ export default function FloatingChat() {
   );
 }
 
-// Separate component for chat messages
-function ChatMessages({
+// Memoized chat messages component to prevent unnecessary re-renders
+const ChatMessages = memo(function ChatMessages({
   messages,
   isLoading,
   error,
@@ -346,4 +362,5 @@ function ChatMessages({
       <div ref={messagesEndRef} />
     </CardContent>
   );
-}
+});
+

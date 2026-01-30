@@ -17,9 +17,10 @@ export default function DashboardPage() {
   const { setContext } = useChatContext();
   const [greeting, setGreeting] = useState('');
 
+  // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -27,7 +28,7 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Set context to planning mode when entering dashboard
+  // Set context to planning mode when entering dashboard - only run once when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       clearChat();
@@ -39,7 +40,7 @@ export default function DashboardPage() {
       else if (hour < 18) setGreeting('Good afternoon');
       else setGreeting('Good evening');
     }
-  }, [isAuthenticated, clearChat, setContext]);
+  }, [isAuthenticated]); // Removed clearChat and setContext - they don't need to trigger re-runs
 
   if (authLoading) {
     return (

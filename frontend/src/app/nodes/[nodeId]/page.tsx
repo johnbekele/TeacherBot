@@ -18,9 +18,10 @@ export default function NodeDetailPage({
   const router = useRouter();
   const [isStarting, setIsStarting] = useState(false);
 
+  // Load user once on mount
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+  }, []); // Empty deps - only run once
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -32,7 +33,7 @@ export default function NodeDetailPage({
     if (isAuthenticated) {
       selectNode(nodeId);
     }
-  }, [isAuthenticated, nodeId, selectNode]);
+  }, [isAuthenticated, nodeId]); // Removed selectNode from deps
 
   const handleStartNode = async () => {
     try {
