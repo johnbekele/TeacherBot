@@ -13,26 +13,29 @@ import { Loader2, RefreshCw, Sparkles, BookOpen, CheckCircle, Compass } from 'lu
 
 export default function LearningPathsPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, loadUser } = useAuthStore();
+  const { isAuthenticated, isLoading, loadUser, _hasHydrated, token } = useAuthStore();
   const [paths, setPaths] = useState<any[]>([]);
   const [pathsLoading, setPathsLoading] = useState(true);
   const [pathsError, setPathsError] = useState<string | null>(null);
 
-  // Load user once on mount
+  // Load user once on mount (after hydration)
   useEffect(() => {
-    loadUser();
-  }, []);
+    if (_hasHydrated) {
+      loadUser();
+    }
+  }, [_hasHydrated]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (_hasHydrated && !isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, _hasHydrated]);
 
-  // Fetch learning paths from API
+  // Fetch learning paths from API (only after hydration and authentication)
   useEffect(() => {
     const fetchPaths = async () => {
-      if (!isAuthenticated) return;
+      // Wait for hydration and auth before fetching
+      if (!_hasHydrated || !isAuthenticated || !token) return;
 
       try {
         setPathsLoading(true);
@@ -50,13 +53,13 @@ export default function LearningPathsPage() {
     };
 
     fetchPaths();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, _hasHydrated, token]);
 
   const handleBrowsePath = (pathId: string) => {
     router.push(`/learning-paths/${pathId}`);
   };
 
-  if (isLoading || pathsLoading) {
+  if (!_hasHydrated || isLoading || pathsLoading) {
     return (
       <AppLayout>
         <div className="flex h-full items-center justify-center py-20">
