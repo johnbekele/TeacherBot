@@ -4,6 +4,8 @@
 
 **Developed by Yohans Bekele**
 
+**Demo Video:** https://www.loom.com/share/562feed79f1b4d64b482cfa72a1d0f53
+
 **Repository:** [https://github.com/johnbekele/TeacherBot](https://github.com/johnbekele/TeacherBot)
 
 ---
