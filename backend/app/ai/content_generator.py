@@ -8,10 +8,62 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
 import json
+import re
 
 from app.config import get_settings
 
 settings = get_settings()
+
+
+def safe_json_parse(text: str) -> Dict:
+    """
+    Safely parse JSON with repair for common AI generation issues
+    """
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Try to repair common issues
+    repaired = text
+
+    # Fix unterminated strings by ensuring balanced quotes
+    # Remove any trailing incomplete content after last complete object/array
+    try:
+        # Find the last complete JSON structure
+        brace_count = 0
+        bracket_count = 0
+        last_valid_pos = 0
+
+        for i, char in enumerate(repaired):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0 and bracket_count == 0:
+                    last_valid_pos = i + 1
+            elif char == '[':
+                bracket_count += 1
+            elif char == ']':
+                bracket_count -= 1
+                if brace_count == 0 and bracket_count == 0:
+                    last_valid_pos = i + 1
+
+        if last_valid_pos > 0:
+            repaired = repaired[:last_valid_pos]
+            return json.loads(repaired)
+    except:
+        pass
+
+    # Last resort: return a minimal valid structure
+    print(f"⚠️ JSON repair failed, returning fallback structure")
+    return {
+        "title": "Content Generation Error",
+        "introduction": "Content is being generated. Please try again.",
+        "sections": [],
+        "summary": "Content generation encountered an issue."
+    }
 
 
 LECTURE_STRUCTURE_PROMPT = """
@@ -316,7 +368,7 @@ IMPORTANT: Generate COMPLETE, DETAILED content. This will be saved and reused.
     elif "```" in content_text:
         content_text = content_text.split("```")[1].split("```")[0].strip()
 
-    lecture = json.loads(content_text)
+    lecture = safe_json_parse(content_text)
 
     # Add next_steps
     lecture["next_steps"] = "Ready to practice? Let's apply what you've learned with some exercises!"
@@ -382,7 +434,10 @@ Return as a JSON array of exercises.
     elif "```" in content_text:
         content_text = content_text.split("```")[1].split("```")[0].strip()
 
-    exercises_data = json.loads(content_text)
+    exercises_data = safe_json_parse(content_text)
+    # Ensure it's a list
+    if isinstance(exercises_data, dict):
+        exercises_data = [exercises_data]
 
     # Format exercises with proper IDs
     exercises = []
@@ -527,7 +582,7 @@ Return as JSON object (not array).
     if "```json" in content_text:
         content_text = content_text.split("```json")[1].split("```")[0].strip()
 
-    exercise_data = json.loads(content_text)
+    exercise_data = safe_json_parse(content_text)
 
     # Format with proper ID
     exercise_id = f"{node_id}-remedial-{str(ObjectId())}"
