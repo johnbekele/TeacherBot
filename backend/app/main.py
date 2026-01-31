@@ -14,12 +14,18 @@ async def lifespan(app: FastAPI):
     """Lifespan events for startup and shutdown"""
     # Startup
     await connect_to_mongodb()
-    await connect_to_redis()
+    try:
+        await connect_to_redis()
+    except Exception as e:
+        print(f"⚠️ Redis optional: {e}")
     print(f"🚀 {settings.APP_NAME} started")
     yield
     # Shutdown
     await close_mongodb_connection()
-    await close_redis_connection()
+    try:
+        await close_redis_connection()
+    except Exception:
+        pass
     print(f"👋 {settings.APP_NAME} stopped")
 
 
@@ -29,25 +35,23 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS: always allow production frontend (Vercel) + config origins
-# Merge so production URLs are included even if env overrides CORS_ORIGINS
-_production_origins = [
+# CORS: hardcoded so Vercel frontend always works (no dependency on env)
+CORS_ORIGINS_LIST = [
+    "http://localhost:3000",
+    "http://localhost:3001",
     "https://techerbot.vercel.app",
     "https://teacherbot.vercel.app",
 ]
-_cors_origins = list(settings.CORS_ORIGINS) if settings.CORS_ORIGINS else []
-for o in _production_origins:
-    if o not in _cors_origins:
-        _cors_origins.append(o)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_origin_regex=r"^https://.*\.vercel\.app$",  # any Vercel deployment
+    allow_origins=CORS_ORIGINS_LIST,
+    allow_origin_regex=r"^https://[\w-]+\.vercel\.app$",
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
+    max_age=600,
 )
 
 # Include API routes
