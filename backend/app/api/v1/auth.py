@@ -106,11 +106,11 @@ async def login(
         data={"sub": str(user["_id"]), "email": user["email"]}
     )
 
-    # Prepare user response
+    # Prepare user response (use .get to avoid KeyError on legacy docs)
     user_response = {
         "user_id": str(user["_id"]),
         "email": user["email"],
-        "full_name": user["full_name"],
+        "full_name": user.get("full_name", ""),
         "onboarding_completed": user.get("onboarding_completed", False)
     }
 

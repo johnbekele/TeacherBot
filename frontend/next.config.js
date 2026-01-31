@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
-const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const backendUrl = raw.replace(/\/$/, ''); // no trailing slash
 
 const nextConfig = {
   reactStrictMode: true,
