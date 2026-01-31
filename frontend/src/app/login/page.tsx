@@ -39,7 +39,7 @@ export default function LoginPage() {
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-2xl font-semibold text-foreground">
-              MyTeacher
+              Teacherbot
             </span>
           </div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          © 2025 MyTeacher. All rights reserved.
+          © 2025 Teacherbot. All rights reserved.
         </p>
       </div>
 
@@ -97,7 +97,7 @@ export default function LoginPage() {
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="text-2xl font-semibold text-foreground">
-              MyTeacher
+              Teacherbot
             </span>
           </div>
 

@@ -10,8 +10,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'MyTeacher - AI DevOps Mentor',
-  description: 'Your personal AI-powered DevOps learning platform',
+  title: 'Teacherbot',
+  description: 'Your personal AI-powered learning platform',
 };
 
 export default function RootLayout({

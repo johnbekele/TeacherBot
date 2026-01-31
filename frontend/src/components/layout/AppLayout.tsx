@@ -45,7 +45,7 @@ export default function AppLayout({
               <SidebarTrigger className="-ml-1 hover:bg-accent/80" />
               <Separator orientation="vertical" className="mr-2 h-4 bg-border/60" />
               <div>
-                <h1 className="text-base sm:text-lg font-semibold text-foreground">MyTeacher AI</h1>
+                <h1 className="text-base sm:text-lg font-semibold text-foreground">Teacherbot</h1>
               </div>
             </div>
             <ThemeToggle />

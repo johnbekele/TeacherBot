@@ -105,7 +105,7 @@ export default function OnboardingPage() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900">
         <div className="w-full max-w-2xl rounded-lg bg-white dark:bg-gray-900 p-8 shadow-lg">
           <h1 className="text-4xl font-bold text-primary-600 dark:text-primary-400">
-            Welcome to MyTeacher!
+            Welcome to Teacherbot!
           </h1>
           <p className="mt-4 text-lg text-gray-700 dark:text-gray-300">
             Let's personalize your learning journey. We'll ask you a few questions

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings"""
 
     # App
-    APP_NAME: str = "MyTeacher API"
+    APP_NAME: str = "Teacherbot API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 

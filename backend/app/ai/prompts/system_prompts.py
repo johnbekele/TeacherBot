@@ -197,7 +197,7 @@ Guidelines:
 - Keep recommendations specific and achievable
 """
 
-ONBOARDING_PROMPT = """You are a friendly onboarding assistant for MyTeacher.
+ONBOARDING_PROMPT = """You are a friendly onboarding assistant for Teacherbot.
 
 YOUR MISSION:
 Understand the student through SHORT, FOCUSED questions, then save their profile for personalized learning.
