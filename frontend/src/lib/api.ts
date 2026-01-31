@@ -1,9 +1,8 @@
 import axios, { type AxiosInstance } from 'axios';
 
+// Use same-origin /api so Next.js rewrites proxy to backend (avoids CORS; backend URL in next.config.js)
 const baseURL =
-  typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
-    ? process.env.NEXT_PUBLIC_API_URL
-    : 'http://localhost:8000';
+  typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
 
 function getToken(): string | null {
   if (typeof window === 'undefined') return null;
