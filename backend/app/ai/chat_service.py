@@ -17,10 +17,17 @@ settings = get_settings()
 class ChatService:
     """Service for handling AI chat interactions"""
 
+    # Model tiers for different use cases
+    MODELS = {
+        "fast": "claude-3-haiku-20240307",  # Simple Q&A, quick responses
+        "balanced": "claude-3-5-sonnet-20241022",  # Tool use, planning, complex tasks
+        "quality": "claude-sonnet-4-20250514",  # Highest quality (if needed)
+    }
+
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        self.model = "claude-3-haiku-20240307"
+        self.default_model = self.MODELS["fast"]
 
     @retry(
         stop=stop_after_attempt(3),
@@ -94,6 +101,7 @@ class ChatService:
         context_data: Optional[Dict] = None,
         tools: Optional[List[Dict]] = None,
         tool_executor: Optional[Callable] = None,
+        model_tier: str = "fast",  # "fast", "balanced", or "quality"
     ) -> Dict:
         """
         Send message and get AI response with optional tool calling support
@@ -106,10 +114,17 @@ class ChatService:
             context_data: Additional context data
             tools: List of tool definitions for Claude to use
             tool_executor: Async function to execute tools: async (tool_name, tool_input) -> str
+            model_tier: Model to use - "fast" for Q&A, "balanced" for tool use/planning
 
         Returns:
             Dict with message, session_id, timestamp, and any tool-generated IDs
         """
+        # Use balanced model for tool use (better at following complex instructions)
+        model = self.MODELS.get(model_tier, self.default_model)
+        if tools and model_tier == "fast":
+            # Auto-upgrade to balanced for tool use
+            model = self.MODELS["balanced"]
+            print(f"🔄 Auto-upgraded to balanced model for tool use")
         # Save user message
         user_msg = {
             "session_id": session_id,
@@ -153,7 +168,7 @@ class ChatService:
 
             # Call Claude API
             api_params = {
-                "model": self.model,
+                "model": model,
                 "max_tokens": 4096,
                 "system": enhanced_system,
                 "messages": messages,

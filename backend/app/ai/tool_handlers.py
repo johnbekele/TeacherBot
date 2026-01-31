@@ -410,6 +410,8 @@ class AIToolHandlers:
             {success, path_id, message, created_path}
         """
         path_id = input_data["path_id"]
+        print(f"🛤️ CREATE_LEARNING_PATH called with path_id='{path_id}', title='{input_data.get('title')}'")
+        print(f"   User ID: {self.user_id}")
 
         # Check if path already exists
         existing = await self.db.learning_paths.find_one({"path_id": path_id, "user_id": self.user_id})
@@ -465,7 +467,10 @@ class AIToolHandlers:
         messages = await self.db.chat_messages.find({
             "session_id": session_id,
             "role": "assistant"
-        }).sort("timestamp", -1).limit(10).to_list(length=10)
+        }).sort("created_at", -1).limit(10).to_list(length=10)
+
+        print(f"🔍 Validating prerequisites for session {session_id}")
+        print(f"   Found {len(messages)} assistant messages")
 
         # Check for required question patterns
         required_patterns = [
@@ -505,17 +510,21 @@ class AIToolHandlers:
             {success, node_id, message, created_node}
         """
         node_id = input_data["node_id"]
+        print(f"📚 CREATE_LEARNING_NODE called with node_id='{node_id}', title='{input_data.get('title')}'")
+        print(f"   User ID: {self.user_id}")
 
-        # Validate planning prerequisites (must ask 2+ questions first)
+        # Validate planning prerequisites (must ask 1+ questions first) - relaxed from 2
         if hasattr(self, 'current_session_id') and self.current_session_id:
             validation = await self._validate_planning_prerequisites(self.current_session_id)
+            print(f"   Validation result: {validation}")
 
-            if not validation["can_create_nodes"]:
+            # Relaxed: only require 1 question instead of 2
+            if validation["questions_asked"] < 1:
                 return {
                     "success": False,
                     "error": "prerequisite_not_met",
-                    "message": f"⚠️ Please ask the user about: {', '.join(validation['missing'])}. You've only asked {validation['questions_asked']}/2 required questions.",
-                    "required_questions": ["Experience level with this topic", "Prior knowledge or similar tools used"]
+                    "message": f"⚠️ Please ask the user about their experience level first. You've asked {validation['questions_asked']} questions.",
+                    "required_questions": ["Experience level with this topic"]
                 }
 
         # Check if node already exists

@@ -180,6 +180,9 @@ async def send_chat_message(
                     context_data["node"] = node
 
         # Send message with tools enabled
+        # Use balanced model for planning (better at following tool use instructions)
+        model_tier = "balanced" if request.context_type == "planning" else "fast"
+
         response = await chat_service.send_message(
             user_id=user_id,
             session_id=session_id,
@@ -187,10 +190,11 @@ async def send_chat_message(
             system_prompt=system_prompt,
             context_data=context_data if context_data else None,
             tools=tool_registry.get_tool_definitions(),
-            tool_executor=tool_registry.execute_tool
+            tool_executor=tool_registry.execute_tool,
+            model_tier=model_tier
         )
 
-        print(f"🔧 Used LearningOrchestrator (tools enabled) for: {request.message[:50]}...")
+        print(f"🔧 Used LearningOrchestrator (tools enabled, model={model_tier}) for: {request.message[:50]}...")
         return response
 
     # ROUTE 2: Use simple TutorAgent (no tools) for pure Q&A
