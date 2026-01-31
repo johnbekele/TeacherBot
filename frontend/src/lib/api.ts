@@ -1,0 +1,139 @@
+import axios, { type AxiosInstance } from 'axios';
+
+const baseURL =
+  typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL
+    : 'http://localhost:8000';
+
+function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const client: AxiosInstance = axios.create({
+  baseURL: `${baseURL}/v1`,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+client.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Auth
+export const api = {
+  login: (credentials: { email: string; password: string }) =>
+    client.post('/auth/login', credentials).then((r) => r.data),
+
+  register: (data: { email: string; password: string; full_name: string }) =>
+    client.post('/auth/register', data).then((r) => r.data),
+
+  logout: () => client.post('/auth/logout').then((r) => r.data),
+
+  getCurrentUser: () => client.get('/auth/me').then((r) => r.data),
+
+  updateProfile: (data: { full_name: string }) =>
+    client.put('/auth/profile', data).then((r) => r.data),
+};
+
+// Nodes
+api.getNodes = (params?: { category?: string; difficulty?: string }) =>
+  client.get('/nodes', { params }).then((r) => r.data);
+
+api.getNode = (nodeId: string) =>
+  client.get(`/nodes/${nodeId}`).then((r) => r.data);
+
+// Exercises
+api.getExercise = (exerciseId: string) =>
+  client.get(`/exercises/${exerciseId}`).then((r) => r.data);
+
+api.submitExercise = (exerciseId: string, code: string, language: string) =>
+  client
+    .post(`/exercises/${exerciseId}/submit`, { code, language })
+    .then((r) => r.data);
+
+api.getExerciseResult = (exerciseId: string, submissionId: string) =>
+  client
+    .get(`/exercises/${exerciseId}/result/${submissionId}`)
+    .then((r) => r.data);
+
+api.getHint = (
+  exerciseId: string,
+  hintLevelOrNumber: number,
+  userCode?: string
+) => {
+  if (userCode !== undefined && userCode !== null) {
+    return client
+      .post('/chat/hint', {
+        exercise_id: exerciseId,
+        hint_level: hintLevelOrNumber,
+        user_code: userCode,
+      })
+      .then((r) => r.data);
+  }
+  return client
+    .post(`/exercises/${exerciseId}/hint`, null, {
+      params: { hint_number: hintLevelOrNumber },
+    })
+    .then((r) => r.data);
+};
+
+// Chat
+api.sendChatMessage = (body: {
+  message: string;
+  context_type?: string;
+  context_id?: string;
+  user_code?: string;
+}) => client.post('/chat/message', body).then((r) => r.data);
+
+api.getChatHistory = (sessionId: string) =>
+  client.get(`/chat/history/${sessionId}`).then((r) => r.data);
+
+// Learning session
+api.continueLearning = (sessionId: string, message: string) =>
+  client
+    .post('/learning-session/continue', { session_id: sessionId, message })
+    .then((r) => r.data);
+
+api.startLearningSession = (nodeId: string) =>
+  client.post(`/learning-session/start/${nodeId}`).then((r) => r.data);
+
+// Course content (instant learning)
+api.startLearningInstant = (nodeId: string) =>
+  client.post(`/course-content/start/${nodeId}`).then((r) => r.data);
+
+api.getLearningStep = (nodeId: string, stepNumber: number) =>
+  client
+    .get(`/course-content/step/${nodeId}/${stepNumber}`)
+    .then((r) => r.data);
+
+api.getAllSteps = (nodeId: string) =>
+  client.get(`/course-content/all-steps/${nodeId}`).then((r) => r.data);
+
+// Learning paths
+api.getLearningPaths = () =>
+  client.get('/learning-paths/').then((r) => r.data);
+
+api.getLearningPathDetail = (pathId: string) =>
+  client.get(`/learning-paths/${pathId}`).then((r) => r.data);
+
+// Progress
+api.getDashboardStats = () =>
+  client.get('/progress/dashboard').then((r) => r.data);
+
+// Onboarding
+api.getOnboardingQuestions = () =>
+  client.get('/onboarding/questions').then((r) => r.data);
+
+api.submitAssessment = (body: {
+  answers: Array<{ question_index: number; answer: string }>;
+  free_text_goals?: string | null;
+}) => client.post('/onboarding/assess', body).then((r) => r.data);
