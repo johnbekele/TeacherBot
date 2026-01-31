@@ -59,35 +59,11 @@ class AIToolHandlers:
         exercise_id = f"ai_ex_{str(ObjectId())}"
         node_id = input_data.get("node_id", "dynamic")
 
-        # Validate content was shown first (content gate)
-        if node_id != "dynamic":
-            # Check if content was displayed
-            content_shown = await self.db.learning_content.find_one({
-                "created_for_user": self.user_id,
-                "title": {"$regex": f".*{node_id}.*", "$options": "i"}
-            })
-
-            if not content_shown:
-                # Check if pre-generated content exists but wasn't displayed
-                pre_gen = await self.db.course_content.find_one({
-                    "node_id": node_id,
-                    "user_id": self.user_id
-                })
-
-                if pre_gen:
-                    return {
-                        "success": False,
-                        "error": "content_not_shown",
-                        "message": f"⚠️ You must display the lecture content first using `display_learning_content`. Pre-generated content is available - show it to the user before creating exercises.",
-                        "available_sections": len(pre_gen.get('lecture', {}).get('sections', []))
-                    }
-                else:
-                    # No pre-generated content, but still need to create content first
-                    return {
-                        "success": False,
-                        "error": "content_not_shown",
-                        "message": f"⚠️ You must display lecture content first using `display_learning_content`. Create and show educational content before exercises."
-                    }
+        # NOTE: Content gate disabled for demo - exercises can be generated without content first
+        # TODO: Re-enable after demo if needed
+        # if node_id != "dynamic":
+        #     content_shown = await self.db.learning_content.find_one({...})
+        #     if not content_shown: return error
 
         # Fetch user profile for personalization
         user_profile = await self.db.user_profiles.find_one({"user_id": self.user_id})
