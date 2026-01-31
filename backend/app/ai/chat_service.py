@@ -20,8 +20,8 @@ class ChatService:
     # Model tiers for different use cases
     MODELS = {
         "fast": "claude-3-haiku-20240307",  # Simple Q&A, quick responses
-        "balanced": "claude-3-5-sonnet-20241022",  # Tool use, planning, complex tasks
-        "quality": "claude-sonnet-4-20250514",  # Highest quality (if needed)
+        "balanced": "claude-opus-4-5-20251101",  # Tool use, planning, complex tasks (Opus)
+        "quality": "claude-opus-4-5-20251101",  # Highest quality
     }
 
     def __init__(self, db: AsyncIOMotorDatabase):
