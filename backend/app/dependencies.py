@@ -13,8 +13,14 @@ security = HTTPBearer()
 
 
 async def get_db() -> AsyncIOMotorDatabase:
-    """Dependency for database access"""
-    return await get_database()
+    """Dependency for database access. Raises 503 if DB is unavailable (e.g. startup failed)."""
+    db = await get_database()
+    if db is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database temporarily unavailable",
+        )
+    return db
 
 
 async def get_redis_client() -> Redis:

@@ -15,25 +15,30 @@ mongodb = MongoDB()
 
 
 async def connect_to_mongodb():
-    """Connect to MongoDB with optimized connection pooling"""
-    mongodb.client = AsyncIOMotorClient(
-        settings.MONGODB_URL,
-        # Connection pool settings for better performance
-        maxPoolSize=50,           # Max connections in pool
-        minPoolSize=10,           # Keep minimum connections ready
-        maxIdleTimeMS=30000,      # Close idle connections after 30s
-        serverSelectionTimeoutMS=5000,  # Fast fail if server unavailable
-        connectTimeoutMS=10000,   # Connection timeout
-        socketTimeoutMS=20000,    # Socket timeout
-        retryWrites=True,         # Auto-retry failed writes
-        w="majority"              # Write concern
-    )
-    mongodb.db = mongodb.client[settings.MONGODB_DB_NAME]
+    """Connect to MongoDB with optimized connection pooling. Non-fatal so app can start (e.g. on Render) and CORS preflight still works."""
+    try:
+        mongodb.client = AsyncIOMotorClient(
+            settings.MONGODB_URL,
+            # Connection pool settings for better performance
+            maxPoolSize=50,           # Max connections in pool
+            minPoolSize=10,           # Keep minimum connections ready
+            maxIdleTimeMS=30000,      # Close idle connections after 30s
+            serverSelectionTimeoutMS=5000,  # Fast fail if server unavailable
+            connectTimeoutMS=10000,   # Connection timeout
+            socketTimeoutMS=20000,    # Socket timeout
+            retryWrites=True,         # Auto-retry failed writes
+            w="majority"              # Write concern
+        )
+        mongodb.db = mongodb.client[settings.MONGODB_DB_NAME]
 
-    # Create indexes for better query performance
-    await create_indexes(mongodb.db)
+        # Create indexes for better query performance
+        await create_indexes(mongodb.db)
 
-    print(f"✅ Connected to MongoDB: {settings.MONGODB_DB_NAME} (poolSize: 10-50)")
+        print(f"✅ Connected to MongoDB: {settings.MONGODB_DB_NAME} (poolSize: 10-50)")
+    except Exception as e:
+        print(f"⚠️ MongoDB connection failed (non-fatal): {e}")
+        mongodb.client = None
+        mongodb.db = None
 
 
 async def create_indexes(db: AsyncIOMotorDatabase):

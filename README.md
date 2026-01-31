@@ -4,6 +4,8 @@
 
 **Developed by Yohans Bekele**
 
+**Repository:** [https://github.com/johnbekele/TeacherBot](https://github.com/johnbekele/TeacherBot)
+
 ---
 
 ## Prerequisites
@@ -20,8 +22,8 @@
 ### 1. Clone and open the project
 
 ```bash
-git clone <your-repo-url>
-cd myteacher
+git clone https://github.com/johnbekele/TeacherBot.git
+cd TeacherBot
 ```
 
 ### 2. Backend
