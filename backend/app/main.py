@@ -29,13 +29,25 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS: always allow production frontend (Vercel) + config origins
+# Merge so production URLs are included even if env overrides CORS_ORIGINS
+_production_origins = [
+    "https://techerbot.vercel.app",
+    "https://teacherbot.vercel.app",
+]
+_cors_origins = list(settings.CORS_ORIGINS) if settings.CORS_ORIGINS else []
+for o in _production_origins:
+    if o not in _cors_origins:
+        _cors_origins.append(o)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",  # any Vercel deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include API routes

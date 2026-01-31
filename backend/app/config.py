@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
 
 
@@ -46,6 +47,14 @@ class Settings(BaseSettings):
         "https://techerbot.vercel.app",
         "https://teacherbot.vercel.app",
     ]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Accept comma-separated string from env (e.g. on Render)."""
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
 
     class Config:
         env_file = ".env"
