@@ -15,26 +15,49 @@ mongodb = MongoDB()
 
 
 async def connect_to_mongodb():
-    """Connect to MongoDB with optimized connection pooling. Non-fatal so app can start (e.g. on Render) and CORS preflight still works."""
+    """Connect to MongoDB with optimized connection pooling. Supports both local MongoDB and Atlas."""
     try:
-        mongodb.client = AsyncIOMotorClient(
-            settings.MONGODB_URL,
-            # Connection pool settings for better performance
-            maxPoolSize=50,           # Max connections in pool
-            minPoolSize=10,           # Keep minimum connections ready
-            maxIdleTimeMS=30000,      # Close idle connections after 30s
-            serverSelectionTimeoutMS=5000,  # Fast fail if server unavailable
-            connectTimeoutMS=10000,   # Connection timeout
-            socketTimeoutMS=20000,    # Socket timeout
-            retryWrites=True,         # Auto-retry failed writes
-            w="majority"              # Write concern
-        )
+        mongo_url = settings.MONGODB_URL
+        is_atlas = "mongodb+srv://" in mongo_url or "mongodb.net" in mongo_url
+
+        # Build connection options
+        connection_options = {
+            "serverSelectionTimeoutMS": 10000,  # Wait up to 10s for server
+            "connectTimeoutMS": 10000,
+            "socketTimeoutMS": 30000,
+            "retryWrites": True,
+            "w": "majority",
+        }
+
+        if is_atlas:
+            # Atlas-specific settings (uses connection pooling on their side)
+            connection_options.update({
+                "maxPoolSize": 10,        # Atlas free tier has limits
+                "minPoolSize": 1,
+                "maxIdleTimeMS": 60000,   # Keep connections longer for serverless
+                "tls": True,              # Required for Atlas
+                "tlsAllowInvalidCertificates": False,
+            })
+            print(f"🌐 Connecting to MongoDB Atlas...")
+        else:
+            # Local MongoDB settings
+            connection_options.update({
+                "maxPoolSize": 50,
+                "minPoolSize": 10,
+                "maxIdleTimeMS": 30000,
+            })
+            print(f"🏠 Connecting to local MongoDB...")
+
+        mongodb.client = AsyncIOMotorClient(mongo_url, **connection_options)
         mongodb.db = mongodb.client[settings.MONGODB_DB_NAME]
+
+        # Verify connection by pinging
+        await mongodb.client.admin.command('ping')
 
         # Create indexes for better query performance
         await create_indexes(mongodb.db)
 
-        print(f"✅ Connected to MongoDB: {settings.MONGODB_DB_NAME} (poolSize: 10-50)")
+        print(f"✅ Connected to MongoDB: {settings.MONGODB_DB_NAME}")
     except Exception as e:
         print(f"⚠️ MongoDB connection failed (non-fatal): {e}")
         mongodb.client = None

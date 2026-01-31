@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
     # Database
+    # Local: mongodb://localhost:27017
+    # Atlas: mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority
     MONGODB_URL: str = "mongodb://localhost:27017"
     MONGODB_DB_NAME: str = "myteacher"
 
