@@ -39,8 +39,13 @@ class Settings(BaseSettings):
     EXERCISE_SUBMIT_LIMIT: int = 10
     CHAT_MESSAGE_LIMIT: int = 5
 
-    # CORS
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001"]
+    # CORS (add production frontend URL so Vercel app can call Render API)
+    CORS_ORIGINS: list = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://techerbot.vercel.app",
+        "https://teacherbot.vercel.app",
+    ]
 
     class Config:
         env_file = ".env"
