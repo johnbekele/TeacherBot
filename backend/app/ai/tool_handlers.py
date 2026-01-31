@@ -365,6 +365,11 @@ class AIToolHandlers:
         """
         from datetime import datetime
 
+        print(f"👤 SAVE_USER_PROFILE called for user: {self.user_id}")
+        print(f"   Experience: {input_data.get('experience_level')}")
+        print(f"   Goals: {input_data.get('learning_goals')}")
+        print(f"   Style: {input_data.get('learning_style')}")
+
         # Create or update user profile
         profile_doc = {
             "user_id": self.user_id,

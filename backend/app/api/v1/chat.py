@@ -140,10 +140,10 @@ async def send_chat_message(
         # Load user profile with weak points for adaptive teaching
         user_profile = await db.user_profiles.find_one({"user_id": user_id})
 
-        # NOTE: Previously enforced onboarding for new users, but this blocked planning.
-        # Now we allow planning without a profile - users can do onboarding later for personalization.
+        # Enforce onboarding for new users - profile enables personalized learning
         if not user_profile and request.context_type == "planning":
-            print("ℹ️ User has no profile, but allowing planning anyway (personalization will be limited)")
+            print("⚠️ User has no profile, redirecting to onboarding first")
+            request.context_type = "onboarding"
 
         weak_points_info = ""
         if user_profile and user_profile.get("weak_points"):
