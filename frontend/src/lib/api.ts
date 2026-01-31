@@ -122,9 +122,9 @@ export const api = {
   getAllSteps: (nodeId: string) =>
     client.get(`/course-content/all-steps/${nodeId}`).then((r) => r.data),
 
-  // Learning paths
+  // Learning paths (no trailing slash to avoid redirect losing auth header)
   getLearningPaths: () =>
-    client.get('/learning-paths/').then((r) => r.data),
+    client.get('/learning-paths').then((r) => r.data),
 
   getLearningPathDetail: (pathId: string) =>
     client.get(`/learning-paths/${pathId}`).then((r) => r.data),

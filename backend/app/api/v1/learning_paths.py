@@ -125,6 +125,7 @@ def determine_module_status(node: Dict, progress_map: Dict, previous_completed: 
     return "available"
 
 
+@router.get("", include_in_schema=False)
 @router.get("/")
 async def get_learning_paths(
     db: AsyncIOMotorDatabase = Depends(get_db),
