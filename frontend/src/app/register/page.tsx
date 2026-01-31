@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/Card';
 import { Mail, Lock, User, Loader2, GraduationCap, ArrowRight, Sparkles, Target, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 

@@ -7,8 +7,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { api } from '@/lib/api';
 import AppLayout from '@/components/layout/AppLayout';
 import LearningPathCard from '@/components/learning-path/LearningPathCard';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Loader2, RefreshCw, Sparkles, BookOpen, CheckCircle, Compass } from 'lucide-react';
 
 export default function LearningPathsPage() {
