@@ -102,7 +102,8 @@ export const useAuthStore = create<AuthState>()(
       return state._loadPromise;
     }
 
-    const token = localStorage.getItem('access_token');
+    // Check token from zustand persisted state (stored in 'auth-storage')
+    const token = state.token;
     if (!token) {
       set({ isAuthenticated: false, isLoading: false });
       return;
