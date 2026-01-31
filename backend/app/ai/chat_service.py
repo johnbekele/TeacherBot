@@ -178,7 +178,13 @@ class ChatService:
             if tools:
                 api_params["tools"] = tools
 
-            response = await self.client.messages.create(**api_params)
+            print(f"🤖 Calling Claude API with model={model}, messages={len(messages)}, tools={len(tools) if tools else 0}")
+
+            try:
+                response = await self.client.messages.create(**api_params)
+            except Exception as api_error:
+                print(f"❌ Claude API error: {type(api_error).__name__}: {str(api_error)}")
+                raise
 
             # Handle different stop reasons
             if response.stop_reason == "end_turn":
