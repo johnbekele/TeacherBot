@@ -85,7 +85,9 @@ export default function RegisterPage() {
             </div>
           </div>
         </div>
-
+        <p className="text-sm text-muted-foreground">
+          developed by <a href="https://github.com/johnbekele/myteacher/tree/main" className="text-primary hover:text-primary/80 transition-colors hover:underline decoration-2 underline-offset-2">Yohans Bekele</a>
+        </p>
         <p className="text-sm text-muted-foreground">
           © 2025 Teacherbot. All rights reserved.
         </p>
