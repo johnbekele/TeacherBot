@@ -1,10 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { useExerciseStore } from '@/stores/exerciseStore';
 import { useChatStore } from '@/stores/chatStore';
-import CodeEditor from './CodeEditor';
 // import ExerciseResults from './ExerciseResults'; // Moved to chat - Phase 2.1
+
+// Monaco Editor is heavy and can hang Next.js production build; load only on client
+const CodeEditor = dynamic(() => import('./CodeEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full min-h-[300px] w-full items-center justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
+      <p className="text-sm text-gray-500 dark:text-gray-400">Loading editor...</p>
+    </div>
+  ),
+});
 
 interface ExerciseViewProps {
   exerciseId: string;
