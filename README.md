@@ -203,6 +203,22 @@ myteacher/
 - **Frontend:** Build with `npm run build`, then run `npm start` or deploy the output (e.g. Vercel). Set `NEXT_PUBLIC_API_URL` to your production backend URL at build time.  
 - **Backend:** Run with Uvicorn (e.g. on Render). Set `CORS_ORIGINS` or rely on the defaults (Vercel URLs are already allowed in code). Use a production `SECRET_KEY`, MongoDB URL, and Anthropic API key.
 
+<img width="1424" height="788" alt="Screenshot 2026-01-31 at 23 44 59" src="https://github.com/user-attachments/assets/7ec87c0c-2d64-447a-98b8-0caac95c815d" />
+<img width="1424" height="788" alt="Screenshot 2026-01-31 at 22 59 59" src="https://github.com/user-attachments/assets/82049374-642c-4e48-8d9a-32bdd846005b" />
+<img width="1424" height="788" alt="Screenshot 2026-01-31 at 23 44 29" src="https://github.com/user-attachments/assets/764faa78-d785-40a9-b033-90e67629a3a1" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 07 23" src="https://github.com/user-attachments/assets/79ce9819-83ac-478c-96bc-6badcd342f63" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 07 14" src="https://github.com/user-attachments/assets/41355b2a-b119-4ada-8841-e8c599f572e2" />
+<img width="1424" height="788" alt="Screenshot 2026-01-31 at 23 44 16" src="https://github.com/user-attachments/assets/ebaff9ab-a9a6-4cae-9d43-c957214a8cd8" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 06 29" src="https://github.com/user-attachments/assets/3d47906d-4739-4302-8ae1-d33e240940de" />
+<img width="1424" height="788" alt="Screenshot 2026-01-31 at 23 02 16" src="https://github.com/user-attachments/assets/b81dc2a9-da6e-43de-8c4e-a5d240aba1b8" />
+
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 06 14" src="https://github.com/user-attachments/assets/7e6ff90d-ddce-491c-81cc-3e676e2756a5" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 05 55" src="https://github.com/user-attachments/assets/132acb07-7a97-4ad3-9e57-02d80829f7df" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 05 48" src="https://github.com/user-attachments/assets/7546710f-5696-4d55-ae32-a55c83b0931d" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 05 39" src="https://github.com/user-attachments/assets/179deae4-cdfc-415c-b929-e0d61207d1bb" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 05 24" src="https://github.com/user-attachments/assets/30412ecd-1f02-48b9-839b-15de3e8ef598" />
+<img width="1365" height="792" alt="Screenshot 2026-01-31 at 22 05 13" src="https://github.com/user-attachments/assets/f49065b0-99a7-41b9-ae20-3962103a1d32" />
+
 ---
 
 ## License
