@@ -42,6 +42,12 @@ export const useAuthStore = create<AuthState>()(
     try {
       const data = await api.login(credentials);
       console.log('Store: Login successful, user:', data.user);
+
+      // Also save token to 'token' key for backwards compatibility with old deployed code
+      if (typeof window !== 'undefined' && data.access_token) {
+        localStorage.setItem('token', data.access_token);
+      }
+
       set({
         user: data.user,
         token: data.access_token,
@@ -80,6 +86,10 @@ export const useAuthStore = create<AuthState>()(
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear backwards-compat token
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+      }
       set({
         user: null,
         token: null,
