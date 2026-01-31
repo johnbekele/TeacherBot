@@ -82,10 +82,18 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          developed by <a href="https://github.com/johnbekele/myteacher/tree/main" className="text-primary hover:text-primary/80 transition-colors hover:underline decoration-2 underline-offset-2">Yohans Bekele</a>
-        </p>
-        <p className="text-sm text-muted-foreground">
+        <div className="mt-6 pt-6 border-t border-border/60">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground/80 mb-1">Developed by</p>
+          <a
+            href="https://github.com/johnbekele/myteacher/tree/main"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-semibold text-primary hover:text-primary/90 transition-colors hover:underline decoration-2 underline-offset-2"
+          >
+            Yohans Bekele
+          </a>
+        </div>
+        <p className="text-xs text-muted-foreground/70 mt-4">
           © 2025 Teacherbot. All rights reserved.
         </p>
       </div>

@@ -193,6 +193,18 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        {/* Developer credit */}
+        <div className="px-2 py-2 border-t border-sidebar-border">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70">Developed by</p>
+          <a
+            href="https://github.com/johnbekele/myteacher/tree/main"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-semibold text-primary hover:text-primary/90 transition-colors hover:underline underline-offset-1 truncate block"
+          >
+            Yohans Bekele
+          </a>
+        </div>
         {/* User Menu */}
         <SidebarMenu>
           <SidebarMenuItem>
