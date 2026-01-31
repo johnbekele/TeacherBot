@@ -1,13 +1,11 @@
 /** @type {import('next').NextConfig} */
-const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const backendUrl = raw.replace(/\/$/, ''); // no trailing slash
+
+// Backend URL for the rewrite proxy (set NEXT_PUBLIC_API_URL env var on Vercel)
+const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 const nextConfig = {
   reactStrictMode: true,
-  env: {
-    NEXT_PUBLIC_API_URL: backendUrl,
-  },
-  // Proxy /api/* to backend so browser same-origin = no CORS (avoids Render cold-start / preflight issues)
+  // Proxy /api/* to backend - browser calls /api/*, Vercel forwards to Render
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${backendUrl}/:path*` }];
   },
